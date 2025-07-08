@@ -1,30 +1,45 @@
-"use client"
+"use client";
 
-import React, { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { LogOut } from "lucide-react"
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
 export function LogoutButton({ variant = "ghost", className, children }) {
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
-  const router = useRouter()
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const router = useRouter();
 
   const handleLogout = async () => {
-    setIsLoggingOut(true)
+    try {
+      setIsLoggingOut(true);
 
-    // Simulate logout process
-    await new Promise((resolve) => setTimeout(resolve, 500))
+      // Optional: call backend logout if needed
+      // await fetch("http://your-backend/api/logout", { method: "POST", credentials: "include" });
 
-    // Clear stored data
-    localStorage.removeItem("jobraze-user")
-    sessionStorage.removeItem("jobraze-session")
+      // Clear all local/session tokens
+      localStorage.removeItem("jobraze-user");
+      localStorage.removeItem("token");
+      sessionStorage.clear();
 
-    // Redirect to login
-    router.push("/auth/login")
-  }
+      // Optional: toast / feedback here
+      // toast.success("Logged out");
+
+      // Redirect to login
+      router.replace("/auth/login");
+    } catch (err) {
+      console.error("Logout failed:", err);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   return (
-    <Button variant={variant} className={className} onClick={handleLogout} disabled={isLoggingOut}>
+    <Button
+      variant={variant}
+      className={className}
+      onClick={handleLogout}
+      disabled={isLoggingOut}
+    >
       {children || (
         <>
           <LogOut className="mr-2 h-4 w-4" />
@@ -32,5 +47,5 @@ export function LogoutButton({ variant = "ghost", className, children }) {
         </>
       )}
     </Button>
-  )
+  );
 }

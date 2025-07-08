@@ -1,6 +1,6 @@
 "use client";
 
-import React, { forwardRef, useEffect, useImperativeHandle, useState, useRef } from 'react';
+import React, { forwardRef, useImperativeHandle, useState, useRef, useCallback, useEffect } from 'react';
 import { TrainingVideo } from './TrainingVideo';
 
 // Function to generate a consistent color based on the title
@@ -18,10 +18,11 @@ const stringToColor = (str) => {
 };
 
 export const AITrainingVideo = forwardRef(({ videoSrc, title, onVideoComplete, autoplay = false, className = '' }, ref) => {
-  const videoRef = React.useRef(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const videoRef = useRef(null);
   const [showThumbnail, setShowThumbnail] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const hasStartedPlaying = useRef(false);
+  const loadingTimeout = useRef(null);
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
@@ -48,35 +49,39 @@ export const AITrainingVideo = forwardRef(({ videoSrc, title, onVideoComplete, a
       const playVideo = async () => {
         try {
           await videoRef.current.play();
+          hasStartedPlaying.current = true;
+          setShowThumbnail(false);
         } catch (err) {
           console.error('Autoplay was prevented:', err);
-          // Autoplay was prevented, show play button
         }
       };
       
-      playVideo();
+      // Clear any existing timeouts
+      if (loadingTimeout.current) {
+        clearTimeout(loadingTimeout.current);
+      }
+      
+      // Set a timeout to handle initial loading
+      loadingTimeout.current = setTimeout(() => {
+        playVideo();
+      }, 100);
+      
+      return () => {
+        if (loadingTimeout.current) {
+          clearTimeout(loadingTimeout.current);
+        }
+      };
     }
   }, [videoSrc, autoplay]);
 
-  const handleVideoEnded = () => {
-    if (onVideoComplete) {
-      onVideoComplete();
-    }
-  };
+  const handleVideoEnded = useCallback(() => {
+    onVideoComplete?.();
+  }, [onVideoComplete]);
 
-  const handlePlay = () => {
+  const handlePlay = useCallback(() => {
     setShowThumbnail(false);
-  };
-
-  const handleLoadedData = () => {
-    setIsLoading(false);
-    setHasError(false);
-  };
-
-  const handleError = () => {
-    setIsLoading(false);
-    setHasError(true);
-  };
+    hasStartedPlaying.current = true;
+  }, []);
 
   // Generate a consistent color based on the video title
   const bgColor = stringToColor(title);
@@ -86,7 +91,7 @@ export const AITrainingVideo = forwardRef(({ videoSrc, title, onVideoComplete, a
       {/* Thumbnail Placeholder */}
       {showThumbnail && (
         <div 
-          className="absolute inset-0 flex items-center justify-center text-white"
+          className="absolute inset-0 flex items-center justify-center text-white z-10"
           style={{ backgroundColor: bgColor }}
         >
           <div className="text-center p-4">
@@ -106,39 +111,28 @@ export const AITrainingVideo = forwardRef(({ videoSrc, title, onVideoComplete, a
         ref={videoRef}
         videoSrc={videoSrc}
         onVideoComplete={handleVideoEnded}
-        className={`w-full h-full object-cover ${isLoading ? 'invisible' : 'visible'}`}
+        className="w-full h-full object-cover"
         controls
         controlsList="nodownload" 
         onPlay={handlePlay}
-        onLoadedData={handleLoadedData}
-        onError={handleError}
+        preload="auto"
+        playsInline
+        disablePictureInPicture
         onTimeUpdate={(e) => {
-          // Mark as watched when reaching 90% of the video
           const video = e.target;
           if (video.currentTime > video.duration * 0.9) {
             handleVideoEnded();
           }
         }}
-        preload="metadata"
-        poster=""
+        style={{ opacity: showThumbnail ? 0 : 1, transition: 'opacity 0.3s ease' }}
       >
         <source src={videoSrc} type="video/mp4" />
         Your browser does not support the video tag.
       </TrainingVideo>
 
-      {/* Loading State */}
-      {isLoading && !showThumbnail && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-            <p className="text-white">Loading video...</p>
-          </div>
-        </div>
-      )}
-
       {/* Error State */}
       {hasError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-red-100 text-red-600 p-4">
+        <div className="absolute inset-0 flex items-center justify-center bg-red-100 text-red-600 p-4 z-10">
           <div className="text-center">
             <p className="font-medium">⚠️ Failed to load video</p>
             <p className="text-sm text-gray-600 mt-1">Please check your connection and try again</p>

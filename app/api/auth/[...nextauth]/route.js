@@ -6,7 +6,7 @@ import clientPromise from "@/lib/mongodb";
 
 export const authOptions = {
   adapter: MongoDBAdapter(clientPromise, {
-    databaseName: "data", // Your database name
+    databaseName: "data",
   }),
   providers: [
     GoogleProvider({
@@ -19,16 +19,25 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-    async session({ session, user }) {
-      if (session?.user && user) {
-        session.user.id = user.id;
-        session.user.name = user.name; // ✅ Add this
-        session.user.email = user.email; // ✅ And this
+    // Save user data in the token at login
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.name = user.name;
+        token.email = user.email;
+      }
+      return token;
+    },
+    // Pass user data from token to session
+    async session({ session, token }) {
+      if (token && session.user) {
+        session.user.id = token.id;
+        session.user.name = token.name;
+        session.user.email = token.email;
       }
       return session;
     },
   },
-
   pages: {
     signIn: "/auth/login",
   },
@@ -37,9 +46,5 @@ export const authOptions = {
 };
 
 const handler = NextAuth(authOptions);
-
-// const handler = async (req, context) => {
-//   return NextAuth(req, context, authOptions);
-// };
 
 export { handler as GET, handler as POST };

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useSession } from 'next-auth/react';
+//import { useSession } from 'next-auth/react';
 import { Search, Filter, MapPin, Briefcase, DollarSign, Clock, Star, Sparkles, Brain, BrainCircuit, GraduationCap, BookOpen, Target, Award, Video, X, RefreshCw, Cpu, Database, BarChart2, Code, Zap, Server, Layers, Shield, Cloud, GitBranch, CpuIcon, Bot, Network, MessageSquare, Eye } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { JobCard } from '@/components/jobs/JobCard';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { SidebarNav } from '@/components/layout/sidebar-nav';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from "@/components/providers/custom_auth-provider";
 
 const sidebarItems = [
   { title: "Dashboard", href: "/individual/dashboard", icon: Sparkles },
@@ -232,9 +233,13 @@ export default function JobsPage() {
     return matchesSearch && matchesLocation && matchesJobType && matchesSpecialization && matchesExperience;
   });
 
-  const { data: session } = useSession();
-  const userName = session?.user?.name || 'User';
-  const userEmail = session?.user?.email || '';
+  //const { data: session } = useSession();
+  //const userName = session?.user?.name || 'User';
+  //const userEmail = session?.user?.email || '';
+  const auth = useAuth();
+  const userName = auth?.user?.name || "User";
+  const userEmail = auth?.user?.email || "";
+ 
 
   return (
     <DashboardLayout

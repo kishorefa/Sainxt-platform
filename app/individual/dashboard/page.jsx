@@ -1,12 +1,20 @@
-"use client"
+"use client";
 
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { SidebarNav } from "@/components/layout/sidebar-nav"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import React, { useState, useEffect } from "react";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { SidebarNav } from "@/components/layout/sidebar-nav";
+import { useAuth } from "@/components/providers/custom_auth-provider";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,7 +22,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+} from "@/components/ui/breadcrumb";
 import {
   User,
   BookOpen,
@@ -29,7 +37,7 @@ import {
   ArrowRight,
   Calendar,
   Brain,
-} from "lucide-react"
+} from "lucide-react";
 
 const sidebarItems = [
   { title: "Dashboard", href: "/individual/dashboard", icon: TrendingUp },
@@ -37,12 +45,16 @@ const sidebarItems = [
   //{ title: "Skills & Experience", href: "/individual/skills", icon: Target },
   //{ title: "Assessments", href: "/individual/assessments", icon: BookOpen },
   //{ title: "Certificates", href: "/individual/certificates", icon: Award },
- // { title: "Training Programs", href: "/individual/training", icon: BookOpen, badge: "New" },
+  // { title: "Training Programs", href: "/individual/training", icon: BookOpen, badge: "New" },
   //{ title: "Internships", href: "/individual/internships", icon: Briefcase },
   { title: "AI101", href: "/individual/introductory-training", icon: BookOpen },
-  { title: "Thought Leadership", href: "/individual/thought-leadership", icon: Brain },
+  {
+    title: "Thought Leadership",
+    href: "/individual/thought-leadership",
+    icon: Brain,
+  },
   { title: "View Jobs", href: "/individual/jobs", icon: Briefcase },
-]
+];
 
 const skillsData = [
   { name: "Machine Learning", level: 85, category: "Technical", trend: "up" },
@@ -50,7 +62,7 @@ const skillsData = [
   { name: "Data Analysis", level: 78, category: "Technical", trend: "stable" },
   { name: "Communication", level: 88, category: "Soft Skills", trend: "up" },
   { name: "Problem Solving", level: 90, category: "Soft Skills", trend: "up" },
-]
+];
 
 const recentActivities = [
   {
@@ -93,7 +105,7 @@ const recentActivities = [
     color: "text-aqua-blue",
     bgColor: "bg-aqua-blue/10",
   },
-]
+];
 
 const upcomingEvents = [
   {
@@ -120,28 +132,167 @@ const upcomingEvents = [
     type: "Mentoring",
     color: "bg-electric-orange",
   },
-]
+];
 
 export default function IndividualDashboard() {
+  const auth = useAuth();
+  const [userProfile, setUserProfile] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        // Only run on client side
+        if (typeof window === 'undefined') {
+          setIsLoading(false);
+          return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('No authentication token found');
+          setIsLoading(false);
+          return;
+        }
+
+        console.log('Fetching user profile with token:', token.substring(0, 10) + '...');
+        
+        const response = await fetch('http://192.168.0.207:5000/api/user/profile', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include'
+        });
+        
+        console.log('Profile response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Error response:', errorText);
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Fetched user profile:', data);
+        setUserProfile(data);
+        
+        // Update the auth context with the full user data
+        if (auth.setUser) {
+          auth.setUser(prev => ({
+            ...prev,
+            ...data,
+            first_name: data.first_name || prev?.first_name
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [auth]);
+
+  if (!auth) {
+    return (
+      <p className="text-center mt-10 text-lg">
+        You must be signed in to access the dashboard.
+      </p>
+    );
+  }
+
+  const { user, loading } = auth;
+
+  // Debug: Log the user object to see what data we have
+  console.log('User object in dashboard:', JSON.stringify(user, null, 2));
+  
+  // Check localStorage directly as well
+  let storedUser = null;
+  if (typeof window !== 'undefined') {
+    storedUser = localStorage.getItem('jobraze-user');
+    console.log('Stored user in localStorage (raw):', storedUser);
+    try {
+      const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+      console.log('Parsed user from localStorage:', parsedUser);
+      console.log('Available keys in user object:', Object.keys(parsedUser || {}));
+    } catch (e) {
+      console.error('Error parsing stored user:', e);
+    }
+  }
+
+  // Get display name with priority: userProfile > auth.user > localStorage
+  const getDisplayName = () => {
+    // First check the fetched user profile
+    if (userProfile?.first_name) return userProfile.first_name;
+    if (userProfile?.name) return userProfile.name.split(' ')[0];
+    
+    // Then check the auth context
+    if (user?.first_name) return user.first_name;
+    if (user?.name) return user.name.split(' ')[0];
+    if (user?.email) return user.email.split('@')[0];
+    
+    // Finally check localStorage as fallback
+    try {
+      const storedUser = typeof window !== 'undefined' && localStorage.getItem('jobraze-user');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        return parsedUser.first_name || parsedUser.name?.split(' ')[0] || parsedUser.email?.split('@')[0];
+      }
+    } catch (e) {
+      console.error('Error parsing stored user:', e);
+    }
+    
+    return 'User';
+  };
+  
+  const userName = getDisplayName();
+  const userEmail = userProfile?.email || user?.email || "user@example.com";
+  
+  if (isLoading) {
+    return <div className="flex justify-center items-center min-h-screen">Loading user data...</div>;
+  }
+
+  if (loading) {
+    return <p className="text-center mt-10 text-lg">Loading...</p>;
+  }
+
+  if (!user) {
+    return (
+      <p className="text-center mt-10 text-lg">
+        You must be signed in to access the dashboard.
+      </p>
+    );
+  }
+
   return (
     <DashboardLayout
       sidebar={<SidebarNav items={sidebarItems} />}
       userRole="individual"
-      userName="John Doe"
-      userEmail="john@example.com"
+      // userName="John Doe"
+      // userEmail="john@example.com"
+      userName={userName}
+      userEmail={userEmail}
     >
       <div className="space-y-6">
         {/* Breadcrumb */}
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href="/individual" className="text-text-gray hover:text-neon-coral">
+              <BreadcrumbLink
+                href="/individual"
+                className="text-text-gray hover:text-neon-coral"
+              >
                 Individual
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage className="text-deep-navy">Dashboard</BreadcrumbPage>
+              <BreadcrumbPage className="text-deep-navy">
+                Dashboard
+              </BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -149,17 +300,27 @@ export default function IndividualDashboard() {
         {/* Welcome Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-deep-navy">Welcome back, John!</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-deep-navy">
+              Welcome back, {userName}
+            </h1>
             <p className="text-text-gray">
-              Continue building your AI-powered career profile and unlock new opportunities with momentum
+              Continue building your AI-powered career profile and unlock new
+              opportunities with momentum
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="border-soft-gray text-deep-navy hover:bg-surface-secondary">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-soft-gray text-deep-navy hover:bg-surface-secondary"
+            >
               <Download className="mr-2 h-4 w-4" />
               Export Profile
             </Button>
-            <Button size="sm" className="bg-neon-coral text-white hover:bg-electric-orange transition-all duration-200">
+            <Button
+              size="sm"
+              className="bg-neon-coral text-white hover:bg-electric-orange transition-all duration-200"
+            >
               <Target className="mr-2 h-4 w-4" />
               Complete Profile
             </Button>
@@ -176,7 +337,8 @@ export default function IndividualDashboard() {
                   Profile Completion Score
                 </CardTitle>
                 <CardDescription className="text-text-gray">
-                  Complete your profile to unlock more opportunities and build momentum
+                  Complete your profile to unlock more opportunities and build
+                  momentum
                 </CardDescription>
               </div>
               <div className="text-right">
@@ -260,8 +422,12 @@ export default function IndividualDashboard() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-deep-navy">Current Level</span>
-                    <Badge className="bg-neon-coral/10 text-neon-coral border-neon-coral/20">Intermediate</Badge>
+                    <span className="text-sm font-medium text-deep-navy">
+                      Current Level
+                    </span>
+                    <Badge className="bg-neon-coral/10 text-neon-coral border-neon-coral/20">
+                      Intermediate
+                    </Badge>
                   </div>
                   <div className="space-y-3">
                     <div className="space-y-2">
@@ -269,14 +435,20 @@ export default function IndividualDashboard() {
                         <span className="text-deep-navy">Machine Learning</span>
                         <span className="font-medium text-neon-coral">85%</span>
                       </div>
-                      <Progress value={85} className="h-2 bg-surface-tertiary" />
+                      <Progress
+                        value={85}
+                        className="h-2 bg-surface-tertiary"
+                      />
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-deep-navy">Data Science</span>
                         <span className="font-medium text-aqua-blue">72%</span>
                       </div>
-                      <Progress value={72} className="h-2 bg-surface-tertiary" />
+                      <Progress
+                        value={72}
+                        className="h-2 bg-surface-tertiary"
+                      />
                     </div>
                   </div>
                   <Button className="w-full bg-neon-coral text-white hover:bg-electric-orange transition-all duration-200">
@@ -301,17 +473,24 @@ export default function IndividualDashboard() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between p-3 border border-aqua-blue/20 rounded-lg bg-aqua-blue/5">
                       <div>
-                        <p className="font-medium text-deep-navy">AI 101 Fundamentals</p>
+                        <p className="font-medium text-deep-navy">
+                          AI 101 Fundamentals
+                        </p>
                         <p className="text-sm text-text-gray">Beginner Level</p>
                       </div>
-                      <Badge className="bg-aqua-blue/10 text-aqua-blue border-aqua-blue/20">Nominated</Badge>
+                      <Badge className="bg-aqua-blue/10 text-aqua-blue border-aqua-blue/20">
+                        Nominated
+                      </Badge>
                     </div>
                     <div className="flex items-center justify-between p-3 border border-soft-gray rounded-lg">
                       <div>
                         <p className="font-medium text-deep-navy">ML Level 1</p>
                         <p className="text-sm text-text-gray">Intermediate</p>
                       </div>
-                      <Badge variant="outline" className="border-soft-gray text-text-gray">
+                      <Badge
+                        variant="outline"
+                        className="border-soft-gray text-text-gray"
+                      >
                         Available
                       </Badge>
                     </div>
@@ -333,7 +512,9 @@ export default function IndividualDashboard() {
                     <Award className="h-5 w-5 text-electric-orange" />
                     My Certificates
                   </CardTitle>
-                  <CardDescription className="text-text-gray">Download and share your achievements</CardDescription>
+                  <CardDescription className="text-text-gray">
+                    Download and share your achievements
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
@@ -343,7 +524,9 @@ export default function IndividualDashboard() {
                           <Award className="h-5 w-5 text-aqua-blue" />
                         </div>
                         <div>
-                          <p className="font-medium text-deep-navy">Python Basics</p>
+                          <p className="font-medium text-deep-navy">
+                            Python Basics
+                          </p>
                           <p className="text-sm text-text-gray">Completed</p>
                         </div>
                       </div>
@@ -361,7 +544,9 @@ export default function IndividualDashboard() {
                           <Award className="h-5 w-5 text-electric-orange" />
                         </div>
                         <div>
-                          <p className="font-medium text-deep-navy">Data Analysis</p>
+                          <p className="font-medium text-deep-navy">
+                            Data Analysis
+                          </p>
                           <p className="text-sm text-text-gray">Completed</p>
                         </div>
                       </div>
@@ -389,7 +574,9 @@ export default function IndividualDashboard() {
           <TabsContent value="skills" className="space-y-6">
             <Card className="card-enterprise">
               <CardHeader>
-                <CardTitle className="text-deep-navy">Skills Overview</CardTitle>
+                <CardTitle className="text-deep-navy">
+                  Skills Overview
+                </CardTitle>
                 <CardDescription className="text-text-gray">
                   Track your skill development across different categories
                 </CardDescription>
@@ -400,17 +587,29 @@ export default function IndividualDashboard() {
                     <div key={skill.name} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-deep-navy">{skill.name}</span>
-                          <Badge variant="outline" className="text-xs border-soft-gray text-text-gray">
+                          <span className="font-medium text-deep-navy">
+                            {skill.name}
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className="text-xs border-soft-gray text-text-gray"
+                          >
                             {skill.category}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-deep-navy">{skill.level}%</span>
-                          {skill.trend === "up" && <TrendingUp className="h-3 w-3 text-aqua-blue" />}
+                          <span className="text-sm font-medium text-deep-navy">
+                            {skill.level}%
+                          </span>
+                          {skill.trend === "up" && (
+                            <TrendingUp className="h-3 w-3 text-aqua-blue" />
+                          )}
                         </div>
                       </div>
-                      <Progress value={skill.level} className="h-2 bg-surface-tertiary" />
+                      <Progress
+                        value={skill.level}
+                        className="h-2 bg-surface-tertiary"
+                      />
                     </div>
                   ))}
                 </div>
@@ -425,28 +624,40 @@ export default function IndividualDashboard() {
           <TabsContent value="activities" className="space-y-6">
             <Card className="card-enterprise">
               <CardHeader>
-                <CardTitle className="text-deep-navy">Recent Activity</CardTitle>
-                <CardDescription className="text-text-gray">Your latest achievements and progress</CardDescription>
+                <CardTitle className="text-deep-navy">
+                  Recent Activity
+                </CardTitle>
+                <CardDescription className="text-text-gray">
+                  Your latest achievements and progress
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {recentActivities.map((activity) => {
-                    const Icon = activity.icon
+                    const Icon = activity.icon;
                     return (
                       <div
                         key={activity.id}
                         className="flex items-center gap-4 p-4 border border-soft-gray rounded-lg hover:bg-surface-secondary transition-colors"
                       >
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activity.bgColor}`}>
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center ${activity.bgColor}`}
+                        >
                           <Icon className={`h-5 w-5 ${activity.color}`} />
                         </div>
                         <div className="flex-1">
-                          <p className="font-medium text-deep-navy">{activity.title}</p>
-                          <p className="text-sm text-text-gray">{activity.description}</p>
+                          <p className="font-medium text-deep-navy">
+                            {activity.title}
+                          </p>
+                          <p className="text-sm text-text-gray">
+                            {activity.description}
+                          </p>
                         </div>
-                        <span className="text-sm text-text-gray">{activity.timestamp}</span>
+                        <span className="text-sm text-text-gray">
+                          {activity.timestamp}
+                        </span>
                       </div>
-                    )
+                    );
                   })}
                 </div>
               </CardContent>
@@ -472,18 +683,25 @@ export default function IndividualDashboard() {
                       className="flex items-center justify-between p-4 border border-soft-gray rounded-lg hover:bg-surface-secondary transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 ${event.color} rounded-lg flex items-center justify-center`}>
+                        <div
+                          className={`w-10 h-10 ${event.color} rounded-lg flex items-center justify-center`}
+                        >
                           <Calendar className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <p className="font-medium text-deep-navy">{event.title}</p>
+                          <p className="font-medium text-deep-navy">
+                            {event.title}
+                          </p>
                           <p className="text-sm text-text-gray">
                             {event.date} at {event.time}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="border-soft-gray text-text-gray">
+                        <Badge
+                          variant="outline"
+                          className="border-soft-gray text-text-gray"
+                        >
                           {event.type}
                         </Badge>
                         <Button
@@ -509,5 +727,5 @@ export default function IndividualDashboard() {
         </Tabs>
       </div>
     </DashboardLayout>
-  )
+  );
 }

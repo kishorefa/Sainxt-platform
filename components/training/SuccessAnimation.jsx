@@ -175,7 +175,7 @@ export function SuccessAnimation({ onContinue, isFinalVideo, userName = 'Learner
             <Button
               onClick={() => {
                 // Go to certificates page
-                router.push("/individual/certificates/ai-training-certificate");
+                router.push("/individual/certificates");
               }}
               className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-lg shadow-blue-500/20"
             >

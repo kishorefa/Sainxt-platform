@@ -1,116 +1,170 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { Eye, EyeOff, Mail, Lock, Chrome, Github, Sparkles, Loader2 } from "lucide-react"
-import { toast } from "sonner"
+import * as React from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/components/providers/custom_auth-provider";
+// import jwt_decode from "jwt-decode";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  Chrome,
+  Github,
+  Sparkles,
+  Loader2,
+} from "lucide-react";
+import { toast } from "sonner";
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [errors, setErrors] = useState({ email: '', password: '', general: '' })
+  const router = useRouter();
+  const { refreshUser } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({
+    email: "",
+    password: "",
+    general: "",
+  });
 
   const validateForm = () => {
-    const newErrors = { email: '', password: '', general: '' }
-    let isValid = true
+    const newErrors = { email: "", password: "", general: "" };
+    let isValid = true;
 
     // Email validation
     if (!email) {
-      newErrors.email = 'Email is required'
-      isValid = false
+      newErrors.email = "Email is required";
+      isValid = false;
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Please enter a valid email address'
-      isValid = false
+      newErrors.email = "Please enter a valid email address";
+      isValid = false;
     }
 
     // Password validation
     if (!password) {
-      newErrors.password = 'Password is required'
-      isValid = false
+      newErrors.password = "Password is required";
+      isValid = false;
     } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters'
-      isValid = false
+      newErrors.password = "Password must be at least 6 characters";
+      isValid = false;
     }
 
-    setErrors(newErrors)
-    return isValid
-  }
+    setErrors(newErrors);
+    return isValid;
+  };
 
   const handleLogin = async (e) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     // Reset errors
-    setErrors({ email: '', password: '', general: '' })
-    
+    setErrors({ email: "", password: "", general: "" });
+
     // Validate form
     if (!validateForm()) {
-      return
+      return;
     }
-    
-    setIsLoading(true)
+
+    setIsLoading(true);
 
     try {
       // FastAPI backend URL - running on port 5000
-      const apiUrl = 'http://192.168.0.207:5000';
+      const apiUrl = "http://192.168.0.207:5000";
       const response = await fetch(`${apiUrl}/api/login`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
-        credentials: 'include'
-      })
+        credentials: "include",
+      });
 
-      const data = await response.json()
-      console.log('Login response:', data);
+      const data = await response.json();
+      console.log("Login response:", data);
 
       if (!response.ok) {
         // Handle specific error messages from the backend
         if (response.status === 401) {
-          if (data.detail === 'Email not registered.') {
-            setErrors(prev => ({ ...prev, email: data.detail }))
-          } else if (data.detail === 'Incorrect password.') {
-            setErrors(prev => ({ ...prev, password: data.detail }))
+          if (data.detail === "Email not registered.") {
+            setErrors((prev) => ({ ...prev, email: data.detail }));
+          } else if (data.detail === "Incorrect password.") {
+            setErrors((prev) => ({ ...prev, password: data.detail }));
           } else {
-            setErrors(prev => ({ ...prev, general: data.detail || 'Invalid credentials' }))
+            setErrors((prev) => ({
+              ...prev,
+              general: data.detail || "Invalid credentials",
+            }));
           }
         } else {
-          setErrors(prev => ({ ...prev, general: data.detail || 'An error occurred. Please try again.' }))
+          setErrors((prev) => ({
+            ...prev,
+            general: data.detail || "An error occurred. Please try again.",
+          }));
         }
-        throw new Error(data.detail || 'Login failed')
+        throw new Error(data.detail || "Login failed");
       }
 
       // Save token to local storage
-      localStorage.setItem('token', data.access_token)
-      
-      // Redirect based on user type
-      if (data.userType === 'enterprise') {
-        router.push('/enterprise/dashboard')
-      } else {
-        router.push('/individual/dashboard')
+
+      localStorage.setItem("token", data.access_token);
+
+      try {
+        const payload = JSON.parse(atob(data.access_token.split(".")[1]));
+        const userData = {
+          id: payload.id,
+          email: payload.email,
+          userType: payload.userType,
+          name: payload.name || data.first_name || payload.email.split("@")[0],
+          first_name: data.first_name || payload.name?.split(" ")[0] || payload.email.split("@")[0],
+          // Include any other user data from the login response
+          ...data.user
+        };
+        
+        // Store the complete user data in localStorage
+        localStorage.setItem("jobraze-user", JSON.stringify(userData));
+        
+        // Force refresh the auth context
+        if (window.refreshUser) {
+          window.refreshUser();
+        }
+      } catch (err) {
+        console.error("Error processing login response:", err);
       }
-      
-      toast.success('Login successful!')
-      
+
+      // Redirect based on user type
+      setTimeout(() => {
+        if (data.userType === "enterprise") {
+          router.push("/enterprise/dashboard");
+        } else {
+          router.push("/individual/dashboard");
+        }
+      }, 100); // 100ms is enough
+
+      toast.success("Login successful!");
     } catch (error) {
       // Only show toast for unexpected errors (not validation errors)
       if (!errors.email && !errors.password && !errors.general) {
-        toast.error(error.message || 'An error occurred during login')
+        toast.error(error.message || "An error occurred during login");
       }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-surface-secondary relative overflow-hidden flex items-center justify-center p-4">
@@ -129,7 +183,9 @@ export default function LoginPage() {
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-aqua-blue/20 to-transparent animate-data-flow" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-center text-deep-navy">Welcome to Jobraze</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center text-deep-navy">
+            Welcome to Jobraze
+          </CardTitle>
           <CardDescription className="text-center text-text-gray">
             Sign in to your account to continue your AI-powered career journey
           </CardDescription>
@@ -141,7 +197,9 @@ export default function LoginPage() {
                 <Label htmlFor="email" className="text-deep-navy font-medium">
                   Email
                 </Label>
-                {errors.email && <span className="text-red-500 text-sm">{errors.email}</span>}
+                {errors.email && (
+                  <span className="text-red-500 text-sm">{errors.email}</span>
+                )}
               </div>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-text-gray" />
@@ -151,20 +209,30 @@ export default function LoginPage() {
                   placeholder="Enter your email"
                   value={email}
                   onChange={(e) => {
-                    setEmail(e.target.value)
-                    if (errors.email) setErrors(prev => ({ ...prev, email: '' }))
+                    setEmail(e.target.value);
+                    if (errors.email)
+                      setErrors((prev) => ({ ...prev, email: "" }));
                   }}
-                  className={`pl-10 bg-surface-tertiary border-${errors.email ? 'red-500' : 'soft-gray'} focus:border-aqua-blue focus:ring-aqua-blue/20 focus-enterprise`}
+                  className={`pl-10 bg-surface-tertiary border-${
+                    errors.email ? "red-500" : "soft-gray"
+                  } focus:border-aqua-blue focus:ring-aqua-blue/20 focus-enterprise`}
                   aria-invalid={!!errors.email}
                 />
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <Label htmlFor="password" className="text-deep-navy font-medium">
+                <Label
+                  htmlFor="password"
+                  className="text-deep-navy font-medium"
+                >
                   Password
                 </Label>
-                {errors.password && <span className="text-red-500 text-sm">{errors.password}</span>}
+                {errors.password && (
+                  <span className="text-red-500 text-sm">
+                    {errors.password}
+                  </span>
+                )}
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-text-gray" />
@@ -174,10 +242,13 @@ export default function LoginPage() {
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => {
-                    setPassword(e.target.value)
-                    if (errors.password) setErrors(prev => ({ ...prev, password: '' }))
+                    setPassword(e.target.value);
+                    if (errors.password)
+                      setErrors((prev) => ({ ...prev, password: "" }));
                   }}
-                  className={`pl-10 pr-10 bg-surface-tertiary border-${errors.password ? 'red-500' : 'soft-gray'} focus:border-aqua-blue focus:ring-aqua-blue/20 focus-enterprise`}
+                  className={`pl-10 pr-10 bg-surface-tertiary border-${
+                    errors.password ? "red-500" : "soft-gray"
+                  } focus:border-aqua-blue focus:ring-aqua-blue/20 focus-enterprise`}
                   aria-invalid={!!errors.password}
                 />
                 <Button
@@ -187,7 +258,11 @@ export default function LoginPage() {
                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-text-gray hover:text-deep-navy"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -210,7 +285,7 @@ export default function LoginPage() {
                   Signing in...
                 </>
               ) : (
-                'Sign In'
+                "Sign In"
               )}
             </Button>
           </form>
@@ -220,7 +295,9 @@ export default function LoginPage() {
               <Separator className="w-full bg-soft-gray" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-surface-primary px-2 text-text-gray">Or continue with</span>
+              <span className="bg-surface-primary px-2 text-text-gray">
+                Or continue with
+              </span>
             </div>
           </div>
 
@@ -244,12 +321,15 @@ export default function LoginPage() {
         <CardFooter>
           <p className="text-center text-sm text-text-gray w-full">
             Don't have an account?{" "}
-            <Link href="/auth/register" className="text-aqua-blue hover:text-neon-coral transition-colors font-medium">
+            <Link
+              href="/auth/register"
+              className="text-aqua-blue hover:text-neon-coral transition-colors font-medium"
+            >
               Sign up
             </Link>
           </p>
         </CardFooter>
       </Card>
     </div>
-  )
+  );
 }

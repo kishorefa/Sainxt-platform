@@ -1,15 +1,28 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { SidebarNav } from "@/components/layout/sidebar-nav"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
-import { LogoutButton } from "@/components/auth/logout"
+import { useState } from "react";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { SidebarNav } from "@/components/layout/sidebar-nav";
+import { useAuth}  from "@/components/providers/custom_auth-provider"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { LogoutButton } from "@/components/auth/logout";
 import {
   User,
   BookOpen,
@@ -23,7 +36,7 @@ import {
   Lock,
   Shield,
   Trash2,
-} from "lucide-react"
+} from "lucide-react";
 
 const sidebarItems = [
   { title: "Dashboard", href: "/individual/dashboard", icon: TrendingUp },
@@ -31,10 +44,15 @@ const sidebarItems = [
   { title: "Skills & Experience", href: "/individual/skills", icon: Target },
   { title: "Assessments", href: "/individual/assessments", icon: BookOpen },
   { title: "Certificates", href: "/individual/certificates", icon: Award },
-  { title: "Training Programs", href: "/individual/training", icon: BookOpen, badge: "New" },
+  {
+    title: "Training Programs",
+    href: "/individual/training",
+    icon: BookOpen,
+    badge: "New",
+  },
   { title: "Internships", href: "/individual/internships", icon: Briefcase },
   { title: "Settings", href: "/individual/settings", icon: Settings },
-]
+];
 
 export default function IndividualSettings() {
   const [settings, setSettings] = useState({
@@ -45,26 +63,31 @@ export default function IndividualSettings() {
     marketingEmails: false,
     profileVisibility: "public",
     twoFactorAuth: false,
-  })
+  });
 
- const handleSettingChange = (key, value) => {
+  const handleSettingChange = (key, value) => {
     setSettings({
       ...settings,
       [key]: value,
-    })
-  }
+    });
+  };
+  const { user } = useAuth();
 
   return (
     <DashboardLayout
       sidebar={<SidebarNav items={sidebarItems} />}
       userRole="individual"
-      userName="John Doe"
-      userEmail="john@example.com"
+      userName={user?.name || "User"}
+      userEmail={user?.email || "user@example.com"}
+      // userName="John Doe"
+      // userEmail="john@example.com"
     >
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-muted-foreground">Manage your account preferences and settings</p>
+          <p className="text-muted-foreground">
+            Manage your account preferences and settings
+          </p>
         </div>
 
         <Card>
@@ -73,13 +96,18 @@ export default function IndividualSettings() {
               <Globe className="h-5 w-5" />
               Appearance & Language
             </CardTitle>
-            <CardDescription>Customize how Jobraze looks and feels</CardDescription>
+            <CardDescription>
+              Customize how Jobraze looks and feels
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="theme">Theme</Label>
-                <Select value={settings.theme} onValueChange={(value) => handleSettingChange("theme", value)}>
+                <Select
+                  value={settings.theme}
+                  onValueChange={(value) => handleSettingChange("theme", value)}
+                >
                   <SelectTrigger id="theme">
                     <SelectValue placeholder="Select theme" />
                   </SelectTrigger>
@@ -89,11 +117,18 @@ export default function IndividualSettings() {
                     <SelectItem value="system">System</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-sm text-muted-foreground">Choose how Jobraze appears to you</p>
+                <p className="text-sm text-muted-foreground">
+                  Choose how Jobraze appears to you
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="language">Language</Label>
-                <Select value={settings.language} onValueChange={(value) => handleSettingChange("language", value)}>
+                <Select
+                  value={settings.language}
+                  onValueChange={(value) =>
+                    handleSettingChange("language", value)
+                  }
+                >
                   <SelectTrigger id="language">
                     <SelectValue placeholder="Select language" />
                   </SelectTrigger>
@@ -105,7 +140,9 @@ export default function IndividualSettings() {
                     <SelectItem value="chinese">Chinese</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-sm text-muted-foreground">Select your preferred language</p>
+                <p className="text-sm text-muted-foreground">
+                  Select your preferred language
+                </p>
               </div>
             </div>
           </CardContent>
@@ -117,7 +154,9 @@ export default function IndividualSettings() {
               <Bell className="h-5 w-5" />
               Notifications
             </CardTitle>
-            <CardDescription>Control when and how you receive notifications</CardDescription>
+            <CardDescription>
+              Control when and how you receive notifications
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
@@ -126,12 +165,16 @@ export default function IndividualSettings() {
                   <Label htmlFor="emailNotifications" className="font-medium">
                     Email Notifications
                   </Label>
-                  <p className="text-sm text-muted-foreground">Receive notifications via email</p>
+                  <p className="text-sm text-muted-foreground">
+                    Receive notifications via email
+                  </p>
                 </div>
                 <Switch
                   id="emailNotifications"
                   checked={settings.emailNotifications}
-                  onCheckedChange={(checked) => handleSettingChange("emailNotifications", checked)}
+                  onCheckedChange={(checked) =>
+                    handleSettingChange("emailNotifications", checked)
+                  }
                 />
               </div>
               <Separator />
@@ -140,12 +183,16 @@ export default function IndividualSettings() {
                   <Label htmlFor="pushNotifications" className="font-medium">
                     Push Notifications
                   </Label>
-                  <p className="text-sm text-muted-foreground">Receive notifications in your browser</p>
+                  <p className="text-sm text-muted-foreground">
+                    Receive notifications in your browser
+                  </p>
                 </div>
                 <Switch
                   id="pushNotifications"
                   checked={settings.pushNotifications}
-                  onCheckedChange={(checked) => handleSettingChange("pushNotifications", checked)}
+                  onCheckedChange={(checked) =>
+                    handleSettingChange("pushNotifications", checked)
+                  }
                 />
               </div>
               <Separator />
@@ -154,12 +201,16 @@ export default function IndividualSettings() {
                   <Label htmlFor="marketingEmails" className="font-medium">
                     Marketing Emails
                   </Label>
-                  <p className="text-sm text-muted-foreground">Receive updates about new features and opportunities</p>
+                  <p className="text-sm text-muted-foreground">
+                    Receive updates about new features and opportunities
+                  </p>
                 </div>
                 <Switch
                   id="marketingEmails"
                   checked={settings.marketingEmails}
-                  onCheckedChange={(checked) => handleSettingChange("marketingEmails", checked)}
+                  onCheckedChange={(checked) =>
+                    handleSettingChange("marketingEmails", checked)
+                  }
                 />
               </div>
             </div>
@@ -172,25 +223,37 @@ export default function IndividualSettings() {
               <User className="h-5 w-5" />
               Privacy
             </CardTitle>
-            <CardDescription>Control your profile visibility and data sharing</CardDescription>
+            <CardDescription>
+              Control your profile visibility and data sharing
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="profileVisibility">Profile Visibility</Label>
               <Select
                 value={settings.profileVisibility}
-                onValueChange={(value) => handleSettingChange("profileVisibility", value)}
+                onValueChange={(value) =>
+                  handleSettingChange("profileVisibility", value)
+                }
               >
                 <SelectTrigger id="profileVisibility">
                   <SelectValue placeholder="Select visibility" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="public">Public - Visible to all employers</SelectItem>
-                  <SelectItem value="limited">Limited - Only visible to approved employers</SelectItem>
-                  <SelectItem value="private">Private - Hidden from search</SelectItem>
+                  <SelectItem value="public">
+                    Public - Visible to all employers
+                  </SelectItem>
+                  <SelectItem value="limited">
+                    Limited - Only visible to approved employers
+                  </SelectItem>
+                  <SelectItem value="private">
+                    Private - Hidden from search
+                  </SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-sm text-muted-foreground">Control who can see your profile and contact you</p>
+              <p className="text-sm text-muted-foreground">
+                Control who can see your profile and contact you
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -201,7 +264,9 @@ export default function IndividualSettings() {
               <Shield className="h-5 w-5" />
               Security
             </CardTitle>
-            <CardDescription>Manage your account security settings</CardDescription>
+            <CardDescription>
+              Manage your account security settings
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between">
@@ -209,12 +274,16 @@ export default function IndividualSettings() {
                 <Label htmlFor="twoFactorAuth" className="font-medium">
                   Two-Factor Authentication
                 </Label>
-                <p className="text-sm text-muted-foreground">Add an extra layer of security to your account</p>
+                <p className="text-sm text-muted-foreground">
+                  Add an extra layer of security to your account
+                </p>
               </div>
               <Switch
                 id="twoFactorAuth"
                 checked={settings.twoFactorAuth}
-                onCheckedChange={(checked) => handleSettingChange("twoFactorAuth", checked)}
+                onCheckedChange={(checked) =>
+                  handleSettingChange("twoFactorAuth", checked)
+                }
               />
             </div>
             <Separator />
@@ -240,7 +309,8 @@ export default function IndividualSettings() {
               <div>
                 <h4 className="font-medium">Delete Account</h4>
                 <p className="text-sm text-muted-foreground">
-                  Permanently delete your account and all associated data. This action cannot be undone.
+                  Permanently delete your account and all associated data. This
+                  action cannot be undone.
                 </p>
               </div>
               <Button variant="destructive">Delete Account</Button>
@@ -261,7 +331,9 @@ export default function IndividualSettings() {
             <div className="space-y-4">
               <div>
                 <h4 className="font-medium">Log Out</h4>
-                <p className="text-sm text-muted-foreground">Log out from your current session</p>
+                <p className="text-sm text-muted-foreground">
+                  Log out from your current session
+                </p>
               </div>
               <LogoutButton variant="outline" />
             </div>
@@ -269,5 +341,5 @@ export default function IndividualSettings() {
         </Card>
       </div>
     </DashboardLayout>
-  )
+  );
 }

@@ -15,11 +15,12 @@ const formatTime = (seconds) => {
   return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
 };
 
-export function TrainingVideo({ onVideoComplete, videoSrc = "/sample.mp4" }) {
+const TrainingVideo = React.forwardRef(({ onVideoComplete, videoSrc = "/sample.mp4", className }, ref) => {
   // Player states
   const [isPlaying, setIsPlaying] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showReplay, setShowReplay] = useState(false);
+  const hasStartedPlaying = useRef(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [volume, setVolume] = useState(1);
@@ -37,6 +38,13 @@ export function TrainingVideo({ onVideoComplete, videoSrc = "/sample.mp4" }) {
   ]);
 
   const videoRef = useRef(null);
+  
+  // Forward the ref to the video element
+  React.useImperativeHandle(ref, () => ({
+    play: () => videoRef.current?.play(),
+    pause: () => videoRef.current?.pause(),
+    videoRef: { current: videoRef.current }
+  }));
   const containerRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
   const [progress, setProgress] = useState(0);
@@ -83,8 +91,30 @@ export function TrainingVideo({ onVideoComplete, videoSrc = "/sample.mp4" }) {
   const handleLoadedData = () => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
-      setIsLoading(false);
+      // Only set loading to false if not already playing
+      if (!isPlaying) {
+        setIsLoading(false);
+      }
     }
+  };
+  
+  // Handle when video starts playing
+  const handlePlay = () => {
+    setIsPlaying(true);
+    setIsLoading(false);
+  };
+  
+  // Handle when video is waiting for data
+  const handleWaiting = () => {
+    // Only show loading if video was playing
+    if (isPlaying) {
+      setIsLoading(true);
+    }
+  };
+  
+  // Handle when enough data is available to play
+  const handleCanPlay = () => {
+    setIsLoading(false);
   };
 
   // Handle mouse movement for controls
@@ -104,8 +134,13 @@ export function TrainingVideo({ onVideoComplete, videoSrc = "/sample.mp4" }) {
   const togglePlayPause = () => {
     if (videoRef.current) {
       if (videoRef.current.paused) {
-        videoRef.current.play();
-        setIsPlaying(true);
+        videoRef.current.play()
+          .then(() => {
+            hasStartedPlaying.current = true;
+            setIsPlaying(true);
+            setIsLoading(false);
+          })
+          .catch(err => console.error('Error playing video:', err));
       } else {
         videoRef.current.pause();
         setIsPlaying(false);
@@ -222,19 +257,20 @@ export function TrainingVideo({ onVideoComplete, videoSrc = "/sample.mp4" }) {
   return (
     <div 
       ref={containerRef}
-      className="relative max-w-4xl mx-auto bg-black/50 rounded-2xl overflow-hidden border border-white/10 group"
+      className={cn(
+        'relative w-full bg-black rounded-lg overflow-hidden group',
+        isFullscreen ? 'fixed inset-0 z-50 w-screen h-screen' : 'max-w-4xl mx-auto',
+        className
+      )}
       onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => {
-        setIsHovering(false);
-        if (isPlaying) setShowControls(false);
-      }}
+      onMouseLeave={() => setIsHovering(false)}
       onMouseMove={handleMouseMove}
     >
       {/* Video Container */}
       <div className="relative aspect-video">
-        {/* Loading Overlay */}
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+        {/* Loading Overlay - Only show if video is actually buffering */}
+        {isLoading && hasStartedPlaying.current && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-10">
             <Loader2 className="h-12 w-12 text-white animate-spin" />
           </div>
         )}
@@ -247,9 +283,13 @@ export function TrainingVideo({ onVideoComplete, videoSrc = "/sample.mp4" }) {
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleVideoEnd}
           onLoadedData={handleLoadedData}
+          onPlay={handlePlay}
+          onWaiting={handleWaiting}
+          onCanPlay={handleCanPlay}
           onClick={togglePlayPause}
           playsInline
           muted={isMuted}
+          preload="auto"
         />
 
         {/* Play/Pause Overlay */}
@@ -505,4 +545,8 @@ export function TrainingVideo({ onVideoComplete, videoSrc = "/sample.mp4" }) {
       </div>
     </div>
   );
-}
+});
+
+TrainingVideo.displayName = 'TrainingVideo';
+
+export { TrainingVideo };

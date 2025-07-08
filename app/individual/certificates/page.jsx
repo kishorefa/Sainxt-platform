@@ -4,9 +4,12 @@ import React, { useRef } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/components/providers/custom_auth-provider";
 // If using react-to-pdf later: import ReactToPdf from "react-to-pdf";
 
-const CertificatePage = ({ name = "Name Surname" }) => {
+const CertificatePage = () => {
+  const { user } = useAuth();
+  const userName = user?.first_name || user?.name || "Learner";
   const certRef = useRef(null);
 
   // Get formatted current date and time
@@ -160,7 +163,7 @@ const CertificatePage = ({ name = "Name Surname" }) => {
                 color: "#FF5E3A",
               }}
             >
-              {name}
+              {userName}
             </h2>
             <p className="text-lg md:text-xl text-gray-700 mb-8">
               for participating in
