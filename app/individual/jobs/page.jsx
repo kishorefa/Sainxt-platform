@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-//import { useSession } from 'next-auth/react';
-import { Search, Filter, MapPin, Briefcase, DollarSign, Clock, Star, Sparkles, Brain, BrainCircuit, GraduationCap, BookOpen, Target, Award, Video, X, RefreshCw, Cpu, Database, BarChart2, Code, Zap, Server, Layers, Shield, Cloud, GitBranch, CpuIcon, Bot, Network, MessageSquare, Eye } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Search, Filter, MapPin, Briefcase, DollarSign, Clock, Star, Sparkles, Brain, BrainCircuit, GraduationCap, BookOpen, Target, Award, Video, X, RefreshCw, Cpu, Database, BarChart2, Code, Zap, Server, Layers, Shield, Cloud, GitBranch, Cpu as CpuIcon, Bot, Network, MessageSquare, Eye, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { JobCard } from '@/components/jobs/JobCard';
@@ -10,198 +10,111 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { SidebarNav } from '@/components/layout/sidebar-nav';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from "@/components/providers/custom_auth-provider";
+import { aiSpecializations, trendingSkills } from '@/data/jobsData';
 
 const sidebarItems = [
   { title: "Dashboard", href: "/individual/dashboard", icon: Sparkles },
   { title: "Profile Builder", href: "/individual/profile", icon: BookOpen },
   { title: "AI101", href: "/individual/introductory-training", icon: BookOpen },
   { title: "Thought Leadership", href: "/individual/thought-leadership", icon: BookOpen },
-  { title: "AI Jobs", href: "/individual/jobs", icon: BrainCircuit, active: true },
+  { title: "View Jobs", href: "/individual/jobs", icon: BrainCircuit, active: true },
 ];
 
-// AI/ML focused job data with diverse experience levels
-const jobsData = [
-  // Fresher Roles (0-1 years)
-  {
-    id: 1,
-    title: 'AI/ML Engineer - Fresher',
-    company: 'TechInnovate',
-    location: 'Bangalore, India',
-    type: 'Full-time',
-    salary: '₹6L - ₹10L',
-    match: 95,
-    skills: ['Python', 'Machine Learning', 'Data Structures', 'Algorithms', 'NumPy', 'Pandas'],
-    posted: '2 days ago',
-    aiFocus: ['Machine Learning', 'Data Science', 'AI Fundamentals'],
-    experience: '0-1 years',
-    experienceLevel: 'fresher',
-    logo: '/images/techinnovate.png',
-    isRemote: true,
-    isFeatured: true,
-    description: 'Great opportunity for fresh graduates to kickstart their career in AI/ML. Training will be provided.'
-  },
-  {
-    id: 2,
-    title: 'AI Research Intern',
-    company: 'DeepMind AI',
-    location: 'Remote',
-    type: 'Internship',
-    salary: 'Stipend: ₹40,000 - ₹60,000/month',
-    match: 92,
-    skills: ['Python', 'Machine Learning', 'Research', 'TensorFlow', 'PyTorch'],
-    posted: '1 week ago',
-    aiFocus: ['Deep Learning', 'Research', 'Neural Networks'],
-    experience: '0-1 years',
-    experienceLevel: 'fresher',
-    logo: '/images/deepmind.png',
-    isRemote: true,
-    isFeatured: true
-  },
-  
-  // Experienced Roles (3+ years)
-  {
-    id: 3,
-    title: 'Senior ML Engineer',
-    company: 'OpenAI',
-    location: 'San Francisco, CA / Remote',
-    type: 'Full-time',
-    salary: '$200,000 - $300,000',
-    match: 88,
-    skills: ['Machine Learning', 'Python', 'Deep Learning', 'LLMs', 'Distributed Systems'],
-    posted: '3 days ago',
-    aiFocus: ['NLP', 'Large Language Models', 'Generative AI'],
-    experience: '5+ years',
-    experienceLevel: 'experienced',
-    logo: '/images/openai.png',
-    isRemote: true,
-    isFeatured: true
-  },
-  {
-    id: 4,
-    title: 'Computer Vision Lead',
-    company: 'Tesla AI',
-    location: 'Palo Alto, CA',
-    type: 'Full-time',
-    salary: '$220,000 - $320,000',
-    match: 90,
-    skills: ['Computer Vision', 'Deep Learning', 'Python', 'OpenCV', 'Autonomous Vehicles'],
-    posted: '5 days ago',
-    aiFocus: ['Computer Vision', 'Autonomous Systems'],
-    experience: '7+ years',
-    experienceLevel: 'experienced',
-    logo: '/images/tesla.png',
-    isFeatured: true
-  },
-  
-  // Mid-Level Roles (1-3 years)
-  {
-    id: 5,
-    title: 'ML Engineer',
-    company: 'Cohere',
-    location: 'Remote',
-    type: 'Full-time',
-    salary: '₹18L - ₹35L',
-    match: 87,
-    skills: ['Python', 'Machine Learning', 'NLP', 'Transformers', 'MLOps'],
-    posted: '1 week ago',
-    aiFocus: ['NLP', 'Large Language Models'],
-    experience: '2-4 years',
-    experienceLevel: 'mid-level',
-    logo: '/images/cohere.png',
-    isRemote: true
-  },
-  
-  // More Fresher Roles
-  {
-    id: 6,
-    title: 'AI/ML Trainee',
-    company: 'AI Forge',
-    location: 'Hyderabad, India',
-    type: 'Full-time',
-    salary: '₹4L - ₹8L',
-    match: 93,
-    skills: ['Python', 'Machine Learning', 'Data Analysis', 'SQL'],
-    posted: '3 days ago',
-    aiFocus: ['Machine Learning', 'Data Science'],
-    experience: '0-1 years',
-    experienceLevel: 'fresher',
-    logo: '/images/aiforge.png',
-    description: 'No prior experience required. We provide comprehensive training in AI/ML technologies.'
-  },
-  
-  // More Experienced Roles
-  {
-    id: 7,
-    title: 'AI Solutions Architect',
-    company: 'NVIDIA',
-    location: 'Bangalore, India / Remote',
-    type: 'Full-time',
-    salary: '₹45L - ₹80L',
-    match: 89,
-    skills: ['AI Architecture', 'Deep Learning', 'Cloud AI', 'MLOps', 'Kubernetes'],
-    posted: '1 week ago',
-    aiFocus: ['AI Infrastructure', 'ML Systems', 'Cloud AI'],
-    experience: '8+ years',
-    experienceLevel: 'experienced',
-    logo: '/images/nvidia.png',
-    isRemote: true,
-    isFeatured: true
-  },
-  
-  // Internship Roles
-  {
-    id: 8,
-    title: 'ML Research Intern',
-    company: 'Microsoft Research',
-    location: 'Bangalore, India',
-    type: 'Internship',
-    salary: 'Stipend: ₹80,000 - ₹1,20,000/month',
-    match: 94,
-    skills: ['Research', 'Machine Learning', 'Python', 'PyTorch'],
-    posted: '4 days ago',
-    aiFocus: ['Machine Learning', 'Research'],
-    experience: '0-1 years',
-    experienceLevel: 'internship',
-    logo: '/images/microsoft.png',
-    description: 'Ideal for students pursuing PhD or Masters in CS with focus on ML/AI.'
-  }
-];
 
-// AI Specializations
-const aiSpecializations = [
-  { id: 'all', name: 'All AI Jobs', icon: Cpu },
-  { id: 'ml', name: 'Machine Learning', icon: BrainCircuit },
-  { id: 'dl', name: 'Deep Learning', icon: Network },
-  { id: 'nlp', name: 'NLP', icon: MessageSquare },
-  { id: 'cv', name: 'Computer Vision', icon: Eye },
-  { id: 'robotics', name: 'Robotics', icon: CpuIcon },
-  { id: 'mlops', name: 'MLOps', icon: Server },
-  { id: 'ai-research', name: 'AI Research', icon: Search },
-];
-
-// Trending AI Skills
-const trendingSkills = [
-  { name: 'LLMs', count: 1243 },
-  { name: 'Transformers', count: 987 },
-  { name: 'Diffusion Models', count: 765 },
-  { name: 'Reinforcement Learning', count: 654 },
-  { name: 'Generative AI', count: 543 },
-  { name: 'Computer Vision', count: 987 },
-  { name: 'NLP', count: 876 },
-  { name: 'TensorFlow', count: 765 },
-  { name: 'PyTorch', count: 876 },
-  { name: 'MLOps', count: 543 },
-];
 
 export default function JobsPage() {
+  const [jobs, setJobs] = useState([]);
+  const [isJobsLoading, setIsJobsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [jobTypeFilter, setJobTypeFilter] = useState('');
   const [activeSpecialization, setActiveSpecialization] = useState('all');
   const [experienceFilter, setExperienceFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [error, setError] = useState(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState(null);
+  const router = useRouter();
+  const auth = useAuth();
 
-  // Experience level options
+  const isLoading = isJobsLoading || isProfileLoading;
+
+  // Fetch jobs from Arbeitnow API
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        setIsJobsLoading(true);
+        const response = await fetch('/api/arbeitnow');
+        if (!response.ok) {
+          throw new Error('Failed to fetch jobs');
+        }
+        const data = await response.json();
+        setJobs(data);
+      } catch (err) {
+        console.error('Error fetching jobs:', err);
+        setError('Failed to load jobs. Please try again later.');
+      } finally {
+        setIsJobsLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, []);
+
+  // Fetch user profile
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        if (typeof window === 'undefined') {
+          setIsProfileLoading(false);
+          return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('No authentication token found');
+          setIsProfileLoading(false);
+          router.push('/auth/login');
+          return;
+        }
+
+        const response = await fetch('http://192.168.0.207:5000/api/user/profile', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Error response:', errorText);
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setUserProfile(data);
+        
+        // Update the auth context with the full user data
+        if (auth.setUser) {
+          auth.setUser(prev => ({
+            ...prev,
+            ...data,
+            first_name: data.first_name || prev?.first_name
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        router.push('/auth/login');
+      } finally {
+        setIsProfileLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [auth, router]);
+
   const experienceLevels = [
     { id: 'all', label: 'All Levels' },
     { id: 'fresher', label: 'Fresher (0-2 years)' },
@@ -210,20 +123,22 @@ export default function JobsPage() {
     { id: 'experienced', label: 'Experienced (5+ years)' },
   ];
 
-  const filteredJobs = jobsData.filter(job => {
-    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         job.skills.some(skill => 
-                           skill.toLowerCase().includes(searchTerm.toLowerCase())
-                         ) ||
-                         job.aiFocus.some(focus =>
-                           focus.toLowerCase().includes(searchTerm.toLowerCase())
-                         );
+  const filteredJobs = jobs.filter(job => {
+    if (!job) return false;
+    
+    const matchesSearch = (job.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (job.company?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (job.skills?.some(skill => 
+                           skill?.toLowerCase().includes(searchTerm.toLowerCase())
+                         ) || false) ||
+                         (job.aiFocus?.some(focus =>
+                           focus?.toLowerCase().includes(searchTerm.toLowerCase())
+                         ) || false);
     const matchesLocation = !locationFilter || 
                           job.location.toLowerCase().includes(locationFilter.toLowerCase());
     const matchesJobType = !jobTypeFilter || job.type === jobTypeFilter;
     const matchesSpecialization = activeSpecialization === 'all' || 
-                                job.aiFocus.some(focus => 
+                                (job.aiFocus || []).some(focus => 
                                   focus.toLowerCase().includes(activeSpecialization)
                                 );
     const matchesExperience = experienceFilter === 'all' || 
@@ -233,13 +148,16 @@ export default function JobsPage() {
     return matchesSearch && matchesLocation && matchesJobType && matchesSpecialization && matchesExperience;
   });
 
-  //const { data: session } = useSession();
-  //const userName = session?.user?.name || 'User';
-  //const userEmail = session?.user?.email || '';
-  const auth = useAuth();
-  const userName = auth?.user?.name || "User";
-  const userEmail = auth?.user?.email || "";
- 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-neon-coral" />
+      </div>
+    );
+  }
+
+  const userName = userProfile?.first_name || userProfile?.name || 'User';
+  const userEmail = userProfile?.email || '';
 
   return (
     <DashboardLayout
@@ -514,7 +432,7 @@ export default function JobsPage() {
                         setSearchTerm('AI');
                       }}
                     >
-                      Show AI Jobs
+                      Show View Jobs
                     </Button>
                   </div>
                 </div>

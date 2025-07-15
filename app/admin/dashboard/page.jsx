@@ -37,6 +37,7 @@ import {
   HardDrive,
   Download,
   RefreshCw,
+  FileText,
 } from "lucide-react"
 
 const sidebarItems = [
@@ -47,6 +48,7 @@ const sidebarItems = [
   { title: "Pricing & Plans", href: "/admin/pricing", icon: DollarSign },
   { title: "System Settings", href: "/admin/settings", icon: Settings },
   { title: "Security", href: "/admin/security", icon: Shield },
+  { title: "Articles", href: "/admin/articles", icon: FileText },
 ]
 
 const platformMetrics = [

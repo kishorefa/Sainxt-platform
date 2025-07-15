@@ -1,7 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useContext } from "react"
+import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
+import { useAuth } from "@/components/providers/custom_auth-provider"
 import Image from "next/image"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { SidebarNav } from "@/components/layout/sidebar-nav"
@@ -23,7 +25,7 @@ const sidebarItems = [
 
 const articles = [
   {
-    id: 1,
+    id: "article1",
     title: "The Future of AI in Healthcare",
     excerpt: "Exploring how artificial intelligence is revolutionizing healthcare delivery and patient outcomes.",
     category: "AI in Healthcare",
@@ -34,7 +36,7 @@ const articles = [
     featured: true
   },
   {
-    id: 2,
+    id: 1,
     title: "Machine Learning Model Interpretability",
     excerpt: "Understanding and explaining complex machine learning models for better decision making.",
     category: "Machine Learning",
@@ -44,7 +46,7 @@ const articles = [
     tags: ["Machine Learning", "Interpretability", "AI Ethics"]
   },
   {
-    id: 3,
+    id: 2,
     title: "Ethical AI: Challenges and Solutions",
     excerpt: "Addressing the ethical implications of AI and strategies for responsible development.",
     category: "AI Ethics",
@@ -54,7 +56,7 @@ const articles = [
     tags: ["Ethics", "Responsible AI", "Governance"]
   },
   {
-    id: 4,
+    id: 3,
     title: "Deep Learning for Natural Language Processing",
     excerpt: "Advancements in NLP and how deep learning is transforming language understanding.",
     category: "NLP",
@@ -64,7 +66,7 @@ const articles = [
     tags: ["NLP", "Deep Learning", "AI"]
   },
   {
-    id: 5,
+    id: 4,
     title: "Computer Vision in Autonomous Vehicles",
     excerpt: "How computer vision is enabling the next generation of self-driving cars.",
     category: "Computer Vision",
@@ -74,7 +76,7 @@ const articles = [
     tags: ["Computer Vision", "Autonomous Vehicles", "AI"]
   },
   {
-    id: 6,
+    id: 5,
     title: "Reinforcement Learning: Beyond Games",
     excerpt: "Practical applications of reinforcement learning in real-world scenarios.",
     category: "Reinforcement Learning",
@@ -86,13 +88,78 @@ const articles = [
 ]
 
 const ThoughtLeadershipPage = () => {
-  const [activeTab, setActiveTab] = useState("all")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [isVisible, setIsVisible] = useState(false)
+  const router = useRouter();
+  const { user, setUser } = useAuth();
+  const [userProfile, setUserProfile] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isVisible, setIsVisible] = useState(false);
 
+  // Fetch user profile
   useEffect(() => {
-    setIsVisible(true)
-  }, [])
+    const fetchUserProfile = async () => {
+      try {
+        // Only run on client side
+        if (typeof window === 'undefined') {
+          setIsLoading(false);
+          return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('No authentication token found');
+          setIsLoading(false);
+          router.push('/auth/login');
+          return;
+        }
+
+        const response = await fetch('http://192.168.0.207:5000/api/user/profile', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Error response:', errorText);
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setUserProfile(data);
+        
+        // Update the auth context with the full user data
+        if (setUser) {
+          setUser(prev => ({
+            ...prev,
+            ...data,
+            first_name: data.first_name || prev?.first_name,
+            name: data.name || data.first_name || prev?.name || 'User'
+          }));
+        }
+
+        // Set visible after successful profile fetch
+        setIsVisible(true);
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        // Fallback to demo user if there's an error but we still want to show the UI
+        setIsVisible(true);
+        setUser({
+          email: "demo@example.com",
+          name: "Demo User",
+          role: "individual",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [setUser, router]);
 
   const filteredArticles = articles.filter(article => {
     const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -132,13 +199,25 @@ const ThoughtLeadershipPage = () => {
       description: "Explore how AI is helping combat climate change through smart energy solutions, sustainable agriculture, and environmental monitoring. Be part of the solution.",
       imageUrl: "https://images.unsplash.com/photo-1509391366360-2e959784a276?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"
     }
-  ]
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-neon-coral border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <DashboardLayout
       title="Thought Leadership"
       description="Insights, research, and thought leadership on Data Science and AI/ML"
       sidebar={<SidebarNav items={sidebarItems} />}
+      userRole="individual"
+      userName={user?.name || userProfile?.name || userProfile?.first_name || 'User'}
+      userEmail={user?.email || userProfile?.email || ''}
+      className="!p-0 bg-gradient-to-b from-deep-navy/5 to-white"
     >
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -299,10 +378,15 @@ const ThoughtLeadershipPage = () => {
                     </div>
                   </CardContent>
                   <CardFooter>
-                    <Button variant="ghost" className="text-neon-coral p-0 hover:bg-transparent group-hover:underline">
-                      Read more <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-                  </CardFooter>
+<Button
+    variant="ghost"
+    className="text-neon-coral p-0 hover:bg-transparent group-hover:underline"
+    onClick={() => router.push(`/individual/thought-leadership/${article.id}`)} // ← this line is required
+>
+    Read more{" "}
+<ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+</Button>
+</CardFooter>
                 </Card>
               </motion.div>
             ))}

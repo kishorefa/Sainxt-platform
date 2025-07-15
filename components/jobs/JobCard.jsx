@@ -1,14 +1,24 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Bookmark, MapPin, Clock, Briefcase, DollarSign, Check, X, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
-export function JobCard({ job }) {
+export function JobCard({ job, onClick }) {
   const [isSaved, setIsSaved] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
+
+  const handleCardClick = (e) => {
+    if (e.target.closest('button, a')) {
+      return;
+    }
+    if (onClick) {
+      onClick(e);
+    }
+  };
 
   const handleSave = (e) => {
     e.stopPropagation();
@@ -26,14 +36,19 @@ export function JobCard({ job }) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-soft-gray p-6 hover:shadow-enterprise transition-all duration-300 hover:border-neon-coral/30 card-ai-enhanced">
+    <div 
+      className="bg-white rounded-xl border border-soft-gray p-6 hover:shadow-enterprise transition-all duration-300 hover:border-neon-coral/30 card-ai-enhanced cursor-pointer"
+      onClick={handleCardClick}
+    >
       <div className="flex justify-between items-start">
         <div className="flex items-start gap-4">
           <div className="w-16 h-16 bg-gradient-to-br from-neon-coral/10 to-aqua-blue/10 rounded-xl flex items-center justify-center border border-neon-coral/20">
             <Briefcase className="w-8 h-8 text-neon-coral" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-deep-navy">{job.title}</h3>
+            <h3 className="text-lg font-semibold text-deep-navy hover:text-neon-coral transition-colors">
+              {job.title}
+            </h3>
             <p className="text-sm text-deep-navy/80">{job.company}</p>
             <div className="flex items-center mt-1">
               <MapPin className="w-4 h-4 text-deep-navy/60 mr-1" />

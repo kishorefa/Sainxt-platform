@@ -90,7 +90,7 @@ export default function LoginPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, userType: "admin" }),
         credentials: "include",
       });
 
@@ -100,16 +100,10 @@ export default function LoginPage() {
       if (!response.ok) {
         // Handle specific error messages from the backend
         if (response.status === 401) {
-          if (data.detail === "Email not registered.") {
-            setErrors((prev) => ({ ...prev, email: data.detail }));
-          } else if (data.detail === "Incorrect password.") {
-            setErrors((prev) => ({ ...prev, password: data.detail }));
-          } else {
-            setErrors((prev) => ({
-              ...prev,
-              general: data.detail || "Invalid credentials",
-            }));
-          }
+          setErrors((prev) => ({
+            ...prev,
+            general: data.detail || "Invalid credentials",
+          }));
         } else {
           setErrors((prev) => ({
             ...prev,
@@ -150,8 +144,10 @@ export default function LoginPage() {
       setTimeout(() => {
         if (data.userType === "enterprise") {
           router.push("/enterprise/dashboard");
-        } else {
+        } else if (data.userType === "individual") {
           router.push("/individual/dashboard");
+        } else if (data.userType === "admin") {
+          router.push("/admin/dashboard");
         }
       }, 100); // 100ms is enough
 

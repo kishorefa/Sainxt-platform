@@ -145,7 +145,7 @@ const CertificatePage = () => {
             </div>
 
             {/* Certificate Title */}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 tracking-wide border-b-2 border-[#FF5E3A] pb-2 mb-2">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 tracking-wide  border-[#FF5E3A] pb-2 mb-2">
               CERTIFICATE
             </h1>
             <p className="text-xl md:text-2xl text-[#FF5E3A] mb-8">

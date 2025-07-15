@@ -23,6 +23,8 @@ import {
 import { TrainingVideo } from "@/components/training/TrainingVideo";
 import { SuccessAnimation } from "@/components/training/SuccessAnimation";
 import { useAuth } from "@/components/providers/custom_auth-provider";
+import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 const sidebarItems = [
   { title: "Dashboard", href: "/individual/dashboard", icon: Sparkles },
@@ -61,8 +63,10 @@ const videoLessons = [
 export default function AITrainingSessionPage() {
   // const { data: session } = useSession();
   const auth = useAuth();
-
+  const router = useRouter();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState(null);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [completedVideos, setCompletedVideos] = useState(new Set());
   const [watchedVideos, setWatchedVideos] = useState(new Set());
@@ -75,8 +79,70 @@ export default function AITrainingSessionPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const videoContainerRef = useRef(null);
   const videoRef = useRef(null);
-  const userName = auth?.user?.first_name || auth?.user?.name || "User";
-  const userEmail = auth?.user?.email || "";
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        // Only run on client side
+        if (typeof window === 'undefined') {
+          setIsLoading(false);
+          return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('No authentication token found');
+          setIsLoading(false);
+          router.push('/auth/login');
+          return;
+        }
+
+        const response = await fetch('http://192.168.0.207:5000/api/user/profile', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Error response:', errorText);
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setUserProfile(data);
+        
+        // Update the auth context with the full user data
+        if (auth.setUser) {
+          auth.setUser(prev => ({
+            ...prev,
+            ...data,
+            first_name: data.first_name || prev?.first_name
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        router.push('/auth/login');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [auth, router]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-neon-coral" />
+      </div>
+    );
+  }
+
+  const userName = userProfile?.first_name || auth?.user?.first_name || auth?.user?.name || 'User';
+  const userEmail = userProfile?.email || auth?.user?.email || '';
 
   const currentVideo = videoLessons[currentVideoIndex];
   const allVideosCompleted = completedVideos.size === videoLessons.length;
@@ -242,7 +308,7 @@ export default function AITrainingSessionPage() {
 
     // Move to next video if available
     if (currentVideoIndex < videoLessons.length - 1) {
-      // setCurrentVideoIndex(currentVideoIndex + 1);
+      setCurrentVideoIndex(currentVideoIndex + 1);
       if (videoRef.current) {
         videoRef.current.scrollIntoView({ behavior: "smooth" });
       }
@@ -354,8 +420,8 @@ export default function AITrainingSessionPage() {
                               </span>
                             </div>
                           ) : (
-                            <div className="w-5 h-5 flex items-center justify-center text-gray-400">
-                              🔒
+                            <div className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 text-2xl font-bold rounded-full px-3 py-1 shadow">
+  🔒
                             </div>
                           )}
                         </div>
@@ -513,10 +579,7 @@ export default function AITrainingSessionPage() {
                       <div className="mt-8">
                         {score.score === score.total ? (
                           <Button
-                            onClick={() => {
-                              setShowMCQ(false);
-                              setCurrentVideoIndex(1); // Move to next video
-                            }}
+                            onClick={handleContinueToNextVideo}
                             className="bg-blue-600 hover:bg-blue-700"
                           >
                             Continue to Next Lesson
