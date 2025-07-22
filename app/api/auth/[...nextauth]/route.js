@@ -6,7 +6,7 @@ import clientPromise from "@/lib/mongodb";
 
 export const authOptions = {
   adapter: MongoDBAdapter(clientPromise, {
-    databaseName: "data",
+    databaseName: "dataaa",
   }),
   providers: [
     GoogleProvider({

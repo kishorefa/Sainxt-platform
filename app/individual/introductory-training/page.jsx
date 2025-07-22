@@ -23,8 +23,8 @@ import {
 import { TrainingVideo } from "@/components/training/TrainingVideo";
 import { SuccessAnimation } from "@/components/training/SuccessAnimation";
 import { useAuth } from "@/components/providers/custom_auth-provider";
-import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 const sidebarItems = [
   { title: "Dashboard", href: "/individual/dashboard", icon: Sparkles },
@@ -35,7 +35,10 @@ const sidebarItems = [
   //  { title: "Certificates", href: "/individual/certificates", icon: Award },
   //  { title: "Training Programs", href: "/individual/training", icon: GraduationCap },
   {
-    title: "Thought Leadership",href: "/individual/thought-leadership",icon: BookOpen},
+    title: "Thought Leadership",
+    href: "/individual/thought-leadership",
+    icon: BookOpen,
+  },
   { title: "View Jobs", href: "/individual/jobs", icon: BookOpen },
 ];
 
@@ -83,48 +86,48 @@ export default function AITrainingSessionPage() {
     const fetchUserProfile = async () => {
       try {
         // Only run on client side
-        if (typeof window === 'undefined') {
+        if (typeof window === "undefined") {
           setIsLoading(false);
           return;
         }
 
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         if (!token) {
-          console.error('No authentication token found');
+          console.error("No authentication token found");
           setIsLoading(false);
-          router.push('/auth/login');
+          router.push("/auth/login");
           return;
         }
 
-        const response = await fetch('http://192.168.0.207:5000/api/user/profile', {
-          method: 'GET',
+        const response = await fetch("http://localhost:5000/api/user/profile", {
+          method: "GET",
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
-          credentials: 'include'
+          credentials: "include",
         });
-        
+
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('Error response:', errorText);
+          console.error("Error response:", errorText);
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
         setUserProfile(data);
-        
+
         // Update the auth context with the full user data
         if (auth.setUser) {
-          auth.setUser(prev => ({
+          auth.setUser((prev) => ({
             ...prev,
             ...data,
-            first_name: data.first_name || prev?.first_name
+            first_name: data.first_name || prev?.first_name,
           }));
         }
       } catch (error) {
-        console.error('Error fetching user profile:', error);
-        router.push('/auth/login');
+        console.error("Error fetching user profile:", error);
+        router.push("/auth/login");
       } finally {
         setIsLoading(false);
       }
@@ -141,8 +144,12 @@ export default function AITrainingSessionPage() {
     );
   }
 
-  const userName = userProfile?.first_name || auth?.user?.first_name || auth?.user?.name || 'User';
-  const userEmail = userProfile?.email || auth?.user?.email || '';
+  const userName =
+    userProfile?.first_name ||
+    auth?.user?.first_name ||
+    auth?.user?.name ||
+    "User";
+  const userEmail = userProfile?.email || auth?.user?.email || "";
 
   const currentVideo = videoLessons[currentVideoIndex];
   const allVideosCompleted = completedVideos.size === videoLessons.length;
@@ -163,7 +170,7 @@ export default function AITrainingSessionPage() {
       alert("Please complete the previous lesson first.");
       return;
     }
-    
+
     // Pause current video if playing
     if (videoRef.current) {
       videoRef.current.pause();
@@ -171,7 +178,10 @@ export default function AITrainingSessionPage() {
 
     setCurrentVideoIndex(index);
     if (videoContainerRef.current) {
-      videoContainerRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      videoContainerRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
     }
   };
 
@@ -202,7 +212,11 @@ export default function AITrainingSessionPage() {
       // Pause the video when starting the assignment
       if (videoRef.current && videoRef.current.pause) {
         videoRef.current.pause();
-      } else if (videoRef.current && videoRef.current.videoRef && videoRef.current.videoRef.current) {
+      } else if (
+        videoRef.current &&
+        videoRef.current.videoRef &&
+        videoRef.current.videoRef.current
+      ) {
         // If using a forwarded ref to the TrainingVideo component
         videoRef.current.videoRef.current.pause();
       }
@@ -240,20 +254,23 @@ export default function AITrainingSessionPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/mcqs/submit-assignment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: userName, // Send user's name from session
-          email: userEmail,
-          answers: questions.map((q, index) => ({
-            question: q.question,
-            answer: selectedAnswers[index] || "",
-          })),
-        }),
-      });
+      const response = await fetch(
+        "http://localhost:5000/api/mcqs/submit-assignment",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: userName, // Send user's name from session
+            email: userEmail,
+            answers: questions.map((q, index) => ({
+              question: q.question,
+              answer: selectedAnswers[index] || "",
+            })),
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -374,14 +391,14 @@ export default function AITrainingSessionPage() {
                       if (isUnlocked) {
                         toast({
                           title: `🎬 ${video.title}`,
-                          description: `Loading video: ${video.description}`
+                          description: `Loading video: ${video.description}`,
                         });
                         handleVideoSelect(index);
                       } else {
                         toast({
                           title: "🔒 Video Locked",
                           description: `"${video.title}" is locked. Please complete the previous video first.`,
-                          variant: "destructive"
+                          variant: "destructive",
                         });
                       }
                     }}
@@ -421,7 +438,7 @@ export default function AITrainingSessionPage() {
                             </div>
                           ) : (
                             <div className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 text-2xl font-bold rounded-full px-3 py-1 shadow">
-  🔒
+                              🔒
                             </div>
                           )}
                         </div>

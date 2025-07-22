@@ -143,51 +143,54 @@ export default function IndividualDashboard() {
     const fetchUserProfile = async () => {
       try {
         // Only run on client side
-        if (typeof window === 'undefined') {
+        if (typeof window === "undefined") {
           setIsLoading(false);
           return;
         }
 
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         if (!token) {
-          console.error('No authentication token found');
+          console.error("No authentication token found");
           setIsLoading(false);
           return;
         }
 
-        console.log('Fetching user profile with token:', token.substring(0, 10) + '...');
-        
-        const response = await fetch('http://192.168.0.207:5000/api/user/profile', {
-          method: 'GET',
+        console.log(
+          "Fetching user profile with token:",
+          token.substring(0, 10) + "..."
+        );
+
+        const response = await fetch("http://localhost:5000/api/user/profile", {
+          method: "GET",
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
-          credentials: 'include'
+          credentials: "include",
         });
-        
-        console.log('Profile response status:', response.status);
-        
+
+        console.log("Profile response status:", response.status);
+
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('Error response:', errorText);
+          console.error("Error response:", errorText);
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
-        console.log('Fetched user profile:', data);
+        console.log("Fetched user profile:", data);
         setUserProfile(data);
-        
+
         // Update the auth context with the full user data
         if (auth.setUser) {
-          auth.setUser(prev => ({
+          auth.setUser((prev) => ({
             ...prev,
             ...data,
-            first_name: data.first_name || prev?.first_name
+            first_name: data.first_name || prev?.first_name,
           }));
         }
       } catch (error) {
-        console.error('Error fetching user profile:', error);
+        console.error("Error fetching user profile:", error);
       } finally {
         setIsLoading(false);
       }
@@ -207,19 +210,22 @@ export default function IndividualDashboard() {
   const { user, loading } = auth;
 
   // Debug: Log the user object to see what data we have
-  console.log('User object in dashboard:', JSON.stringify(user, null, 2));
-  
+  console.log("User object in dashboard:", JSON.stringify(user, null, 2));
+
   // Check localStorage directly as well
   let storedUser = null;
-  if (typeof window !== 'undefined') {
-    storedUser = localStorage.getItem('jobraze-user');
-    console.log('Stored user in localStorage (raw):', storedUser);
+  if (typeof window !== "undefined") {
+    storedUser = localStorage.getItem("jobraze-user");
+    console.log("Stored user in localStorage (raw):", storedUser);
     try {
       const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-      console.log('Parsed user from localStorage:', parsedUser);
-      console.log('Available keys in user object:', Object.keys(parsedUser || {}));
+      console.log("Parsed user from localStorage:", parsedUser);
+      console.log(
+        "Available keys in user object:",
+        Object.keys(parsedUser || {})
+      );
     } catch (e) {
-      console.error('Error parsing stored user:', e);
+      console.error("Error parsing stored user:", e);
     }
   }
 
@@ -227,32 +233,41 @@ export default function IndividualDashboard() {
   const getDisplayName = () => {
     // First check the fetched user profile
     if (userProfile?.first_name) return userProfile.first_name;
-    if (userProfile?.name) return userProfile.name.split(' ')[0];
-    
+    if (userProfile?.name) return userProfile.name.split(" ")[0];
+
     // Then check the auth context
     if (user?.first_name) return user.first_name;
-    if (user?.name) return user.name.split(' ')[0];
-    if (user?.email) return user.email.split('@')[0];
-    
+    if (user?.name) return user.name.split(" ")[0];
+    if (user?.email) return user.email.split("@")[0];
+
     // Finally check localStorage as fallback
     try {
-      const storedUser = typeof window !== 'undefined' && localStorage.getItem('jobraze-user');
+      const storedUser =
+        typeof window !== "undefined" && localStorage.getItem("jobraze-user");
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
-        return parsedUser.first_name || parsedUser.name?.split(' ')[0] || parsedUser.email?.split('@')[0];
+        return (
+          parsedUser.first_name ||
+          parsedUser.name?.split(" ")[0] ||
+          parsedUser.email?.split("@")[0]
+        );
       }
     } catch (e) {
-      console.error('Error parsing stored user:', e);
+      console.error("Error parsing stored user:", e);
     }
-    
-    return 'User';
+
+    return "User";
   };
-  
+
   const userName = getDisplayName();
   const userEmail = userProfile?.email || user?.email || "user@example.com";
-  
+
   if (isLoading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading user data...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        Loading user data...
+      </div>
+    );
   }
 
   if (loading) {

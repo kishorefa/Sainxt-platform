@@ -71,14 +71,18 @@ const sidebarItems = [
   { title: "Dashboard", href: "/individual/dashboard", icon: TrendingUp },
   { title: "Profile Builder", href: "/individual/profile", icon: User },
   //{ title: "Skills & Experience", href: "/individual/skills", icon: Target },
- // { title: "Assessments", href: "/individual/assessments", icon: BookOpen },
- // { title: "Certificates", href: "/individual/certificates", icon: Award },
+  // { title: "Assessments", href: "/individual/assessments", icon: BookOpen },
+  // { title: "Certificates", href: "/individual/certificates", icon: Award },
   //  title: "Training Programs",href: "/individual/training",icon: BookOpen,badge: "New",
-//  { title: "Internships", href: "/individual/internships", icon: Briefcase },
-//  { title: "Settings", href: "/individual/settings", icon: BookOpen },
- { title: "AI101", href: "/individual/introductory-training", icon: BookOpen },
- { title: "Thought Leadership", href: "/individual/thought-leadership", icon: BookOpen },
-{ title: "View Jobs", href: "/individual/jobs", icon: Briefcase },
+  //  { title: "Internships", href: "/individual/internships", icon: Briefcase },
+  //  { title: "Settings", href: "/individual/settings", icon: BookOpen },
+  { title: "AI101", href: "/individual/introductory-training", icon: BookOpen },
+  {
+    title: "Thought Leadership",
+    href: "/individual/thought-leadership",
+    icon: BookOpen,
+  },
+  { title: "View Jobs", href: "/individual/jobs", icon: Briefcase },
 ];
 
 const steps = [
@@ -279,7 +283,7 @@ export default function ProfileBuilder() {
         // If token exists, try to fetch user data
         console.log("Access token found, fetching user data...");
         const response = await fetch(
-          "http://192.168.0.207:5000/api/read_users_me",
+          "http://localhost:5000/api/read_users_me",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -456,7 +460,7 @@ export default function ProfileBuilder() {
 
       // Call the AI review API
       const response = await fetch(
-        "http://192.168.0.207:5000/api/ai-review/generate-scores",
+        "http://localhost:5000/api/ai-review/generate-scores",
         {
           method: "POST",
           headers: {
@@ -1795,7 +1799,7 @@ export default function ProfileBuilder() {
     try {
       // Submit personal information
       const profileResponse = await fetch(
-        "http://192.168.0.207:5000/api/save_profile",
+        "http://localhost:5000/api/save_profile",
         {
           method: "POST",
           headers: {
@@ -1816,7 +1820,7 @@ export default function ProfileBuilder() {
 
       // Submit education
       const educationResponse = await fetch(
-        "http://192.168.0.207:5000/api/save_education",
+        "http://localhost:5000/api/save_education",
         {
           method: "POST",
           headers: {
@@ -1839,7 +1843,7 @@ export default function ProfileBuilder() {
         const exp =
           formData.workExperiences[formData.workExperiences.length - 1];
         const experienceResponse = await fetch(
-          "http://192.168.0.207:5000/api/save_experience",
+          "http://localhost:5000/api/save_experience",
           {
             method: "POST",
             headers: {
@@ -1864,7 +1868,7 @@ export default function ProfileBuilder() {
       if (formData.projects.length > 0) {
         const proj = formData.projects[formData.projects.length - 1];
         const projectResponse = await fetch(
-          "http://192.168.0.207:5000/api/save_project",
+          "http://localhost:5000/api/save_project",
           {
             method: "POST",
             headers: {
@@ -1884,7 +1888,7 @@ export default function ProfileBuilder() {
 
       // Submit skills
       const skillsResponse = await fetch(
-        "http://192.168.0.207:5000/api/save_skills",
+        "http://localhost:5000/api/save_skills",
         {
           method: "POST",
           headers: {
@@ -1908,7 +1912,7 @@ export default function ProfileBuilder() {
 
       // Submit preferences
       const preferencesResponse = await fetch(
-        "http://192.168.0.207:5000/api/save_preferences",
+        "http://localhost:5000/api/save_preferences",
         {
           method: "POST",
           headers: {
@@ -1979,7 +1983,7 @@ export default function ProfileBuilder() {
                       setIsLoading(true);
                       console.log("Calling AI review API...");
                       const response = await fetch(
-                        "http://192.168.0.207:5000/api/ai-review/generate-scores",
+                        "http://localhost:5000/api/ai-review/generate-scores",
                         {
                           method: "POST",
                           headers: {

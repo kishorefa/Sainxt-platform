@@ -1,16 +1,39 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect } from "react"
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { SidebarNav } from "@/components/layout/sidebar-nav"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Search, FileText, Plus, Pencil, Trash2, ArrowUpDown, Loader2, Eye } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useToast } from "@/components/ui/use-toast"
+import React, { useState, useEffect } from "react";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { SidebarNav } from "@/components/layout/sidebar-nav";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useParams } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import {
+  Search,
+  FileText,
+  Plus,
+  Pencil,
+  Trash2,
+  ArrowUpDown,
+  Loader2,
+  Eye,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,89 +43,149 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { TrendingUp, Users, Building2, BarChart3, DollarSign, Settings, Shield } from "lucide-react"
+} from "@/components/ui/alert-dialog";
+import {
+  TrendingUp,
+  Users,
+  Building2,
+  BarChart3,
+  DollarSign,
+  Settings,
+  Shield,
+} from "lucide-react";
 
 export default function AdminArticlesPage() {
-  const router = useRouter()
-  const { toast } = useToast()
-  const [articles, setArticles] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [sortConfig, setSortConfig] = useState({ key: 'updatedAt', direction: 'desc' })
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [articleToDelete, setArticleToDelete] = useState(null)
-  const [isDeleting, setIsDeleting] = useState(false)
+  const router = useRouter();
+  const { toast } = useToast();
+  const params = useParams(); // ✅ this is synchronous
+  const id = params.id; // ✅ access it directly
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortConfig, setSortConfig] = useState({
+    key: "updatedAt",
+    direction: "desc",
+  });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [articleToDelete, setArticleToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const sidebarItems = [
     { title: "Dashboard", href: "/admin/dashboard", icon: TrendingUp },
     { title: "User Management", href: "/admin/users", icon: Users },
-    { title: "Enterprise Accounts", href: "/admin/enterprises", icon: Building2 },
+    {
+      title: "Enterprise Accounts",
+      href: "/admin/enterprises",
+      icon: Building2,
+    },
     { title: "Analytics", href: "/admin/analytics", icon: BarChart3 },
     { title: "Pricing & Plans", href: "/admin/pricing", icon: DollarSign },
     { title: "System Settings", href: "/admin/settings", icon: Settings },
     { title: "Security", href: "/admin/security", icon: Shield },
-    { title: "Articles", href: "/admin/articles", icon: FileText, active: true },
-  ]
+    {
+      title: "Articles",
+      href: "/admin/articles",
+      icon: FileText,
+      active: true,
+    },
+  ];
 
   useEffect(() => {
-    fetchArticles()
-  }, [])
+    fetchArticles();
+  }, []);
 
   const fetchArticles = async () => {
     try {
-      setLoading(true)
-      const response = await fetch('/api/article/list')
-      const data = await response.json()
-      setArticles(data.articles)
+      setLoading(true);
+      const response = await fetch("http://localhost:5000/article/list");
+      const data = await response.json();
+      console.log("Fetched articles:", data);
+      // Ensure `data.articles` is an array
+      setArticles(Array.isArray(data.articles) ? data.articles : []);
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to fetch articles",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleDelete = async (articleId) => {
     try {
-      setIsDeleting(true)
+      setIsDeleting(true);
       const response = await fetch(`/api/article/${articleId}`, {
-        method: 'DELETE',
-      })
-      if (!response.ok) throw new Error('Failed to delete article')
-      
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Failed to delete article");
+
       toast({
         title: "Success",
         description: "Article deleted successfully",
-      })
-      
-      setDeleteDialogOpen(false)
-      fetchArticles()
+      });
+
+      setDeleteDialogOpen(false);
+      fetchArticles();
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete article",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsDeleting(false)
+      setIsDeleting(false);
     }
-  }
+  };
 
-  const filteredArticles = articles.filter(article => 
+  // const filteredArticles = articles.filter((article) =>
+  const filteredArticles = (articles || []).filter((article) =>
     article.title.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  );
 
   const sortedArticles = [...filteredArticles].sort((a, b) => {
-    const key = sortConfig.key
-    const direction = sortConfig.direction
-    return direction === 'asc'
-      ? a[key] > b[key] ? 1 : -1
-      : a[key] < b[key] ? 1 : -1
-  })
+    const key = sortConfig.key;
+    const direction = sortConfig.direction;
+    return direction === "asc"
+      ? a[key] > b[key]
+        ? 1
+        : -1
+      : a[key] < b[key]
+      ? 1
+      : -1;
+  });
+
+  const handleSubmit = async (article) => {
+    try {
+      const formData = new FormData();
+      formData.append("article_id", article.article_id);
+      formData.append("title", article.title);
+      formData.append("content", article.content);
+      formData.append("status", "published");
+
+      const response = await fetch("http://localhost:5000/submit", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.detail || "Submission failed");
+
+      toast({
+        title: "Success",
+        description: `Article "${article.title}" submitted`,
+      });
+
+      fetchArticles(); // refresh
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit article",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <DashboardLayout
@@ -117,10 +200,10 @@ export default function AdminArticlesPage() {
             <h2 className="text-2xl font-bold text-deep-navy">Articles</h2>
             <p className="text-sm text-text-gray">Manage your articles</p>
           </div>
-          <Button 
-            variant="default" 
+          <Button
+            variant="default"
             size="lg"
-            onClick={() => router.push('/admin/articles/new')}
+            onClick={() => router.push("/admin/articles/new")}
             className="flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
@@ -137,13 +220,15 @@ export default function AdminArticlesPage() {
           />
           <Button
             variant="outline"
-            onClick={() => setSortConfig({
-              key: sortConfig.key === 'updatedAt' ? 'createdAt' : 'updatedAt',
-              direction: sortConfig.direction === 'asc' ? 'desc' : 'asc'
-            })}
+            onClick={() =>
+              setSortConfig({
+                key: sortConfig.key === "updatedAt" ? "createdAt" : "updatedAt",
+                direction: sortConfig.direction === "asc" ? "desc" : "asc",
+              })
+            }
           >
             <ArrowUpDown className="h-4 w-4 mr-2" />
-            {sortConfig.key === 'updatedAt' ? 'Updated' : 'Created'}
+            {sortConfig.key === "updatedAt" ? "Updated" : "Created"}
           </Button>
         </div>
 
@@ -162,48 +247,70 @@ export default function AdminArticlesPage() {
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {sortedArticles.map((article) => (
                 <TableRow key={article._id}>
-                  <TableCell>{article.title}</TableCell>
+                  <TableCell>{article.title || "Untitled"}</TableCell>
                   <TableCell>
                     <Badge
-                      className={`px-2 py-1 ${article.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}
+                      className={`px-2 py-1 ${
+                        article.status === "published"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}
                     >
-                      {article.status}
+                      {article.status || "draft"}
                     </Badge>
                   </TableCell>
-                  <TableCell>{article.author || 'Admin'}</TableCell>
+                  <TableCell>{article.author || "Admin"}</TableCell>
                   <TableCell>
-                    {new Date(article.updatedAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
+                    {article.updatedAt
+                      ? new Date(article.updatedAt).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )
+                      : "N/A"}
                   </TableCell>
                   <TableCell className="flex justify-end gap-2">
+                    {/* View */}
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => router.push(`/admin/articles/view/${article._id}`)}
+                      onClick={() =>
+                        router.push(`/admin/articles/view/${article._id}`)
+                      }
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
+
+                    {/* Edit */}
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => router.push(`/admin/articles/edit/${article._id}`)}
+                      onClick={() =>
+                        // router.push(`/admin/articles/edit/${article._id}`)
+                        router.push(
+                          `/admin/articles/edit/${article.article_id}`
+                        )
+                      }
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
+
+                    {/* Delete */}
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => {
-                        setArticleToDelete(article._id)
-                        setDeleteDialogOpen(true)
+                        setArticleToDelete(article._id);
+                        setDeleteDialogOpen(true);
                       }}
                       className="text-red-500 hover:text-red-700"
                     >
@@ -221,7 +328,8 @@ export default function AdminArticlesPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the article.
+                This action cannot be undone. This will permanently delete the
+                article.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -236,7 +344,7 @@ export default function AdminArticlesPage() {
                     Deleting...
                   </div>
                 ) : (
-                  'Delete'
+                  "Delete"
                 )}
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -244,5 +352,5 @@ export default function AdminArticlesPage() {
         </AlertDialog>
       </div>
     </DashboardLayout>
-  )
+  );
 }

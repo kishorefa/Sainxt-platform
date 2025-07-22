@@ -114,7 +114,7 @@ export default function ReadinessReport() {
         // Uncomment this to enable API call when ready
         /*
         if (email) {
-          const response = await fetch('http://192.168.0.207:5000/api/generate_scores', {
+          const response = await fetch('http://localhost:5000/api/generate_scores', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

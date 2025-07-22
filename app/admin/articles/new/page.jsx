@@ -1,81 +1,105 @@
-"use client"
+"use client";
 
-import { useState } from 'react'
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { SidebarNav } from "@/components/layout/sidebar-nav"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/components/ui/use-toast"
-import { TrendingUp, Users, Building2, BarChart3, DollarSign, Settings, Shield, FileText } from "lucide-react"
+import { useState } from "react";
+import dynamic from "next/dynamic"; // ✅ required
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { SidebarNav } from "@/components/layout/sidebar-nav";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/use-toast";
+// import TiptapEditor from "@/components/TiptapEditor"; // ✅ Replace Mantine import
+
+import {
+  TrendingUp,
+  Users,
+  Building2,
+  BarChart3,
+  DollarSign,
+  Settings,
+  Shield,
+  FileText,
+} from "lucide-react";
+
+const TiptapEditor = dynamic(() => import("@/components/TiptapEditor"), {
+  ssr: false,
+});
 
 export default function NewArticlePage() {
-  const [articleId, setArticleId] = useState('')
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
-  const [status, setStatus] = useState('draft')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const { toast } = useToast()
+  const [articleId, setArticleId] = useState("");
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState(""); // HTML content
+  const [status, setStatus] = useState("draft");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [image, setImage] = useState(null);
+  const { toast } = useToast();
 
   const sidebarItems = [
     { title: "Dashboard", href: "/admin/dashboard", icon: TrendingUp },
     { title: "User Management", href: "/admin/users", icon: Users },
-    { title: "Enterprise Accounts", href: "/admin/enterprises", icon: Building2 },
+    {
+      title: "Enterprise Accounts",
+      href: "/admin/enterprises",
+      icon: Building2,
+    },
     { title: "Analytics", href: "/admin/analytics", icon: BarChart3 },
     { title: "Pricing & Plans", href: "/admin/pricing", icon: DollarSign },
     { title: "System Settings", href: "/admin/settings", icon: Settings },
     { title: "Security", href: "/admin/security", icon: Shield },
-    { title: "Articles", href: "/admin/articles", icon: FileText, active: true },
-  ]
+    {
+      title: "Articles",
+      href: "/admin/articles",
+      icon: FileText,
+      active: true,
+    },
+  ];
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     if (!articleId || !title || !content) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsSubmitting(true)
-    
-    try {
-      const response = await fetch('/api/article/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          article_id: articleId,
-          title,
-          content,
-          status
-        }).toString(),
-      })
+    setIsSubmitting(true);
 
-      if (!response.ok) throw new Error('Failed to submit article')
-      
+    try {
+      const formData = new FormData();
+      formData.append("article_id", articleId);
+      formData.append("title", title);
+      formData.append("content", content);
+      formData.append("status", status);
+      if (image) {
+        formData.append("image", image);
+      }
+
+      const res = await fetch("http://localhost:5000/submit", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Failed to submit article");
+
       toast({
         title: "Success",
         description: "Article submitted successfully",
-      })
-      
-      // Redirect to articles list
-      window.location.href = '/admin/articles'
-    } catch (error) {
+      });
+      window.location.href = "/admin/articles";
+    } catch (err) {
       toast({
         title: "Error",
-        description: "Failed to submit article",
+        description: err.message,
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <DashboardLayout
@@ -92,7 +116,7 @@ export default function NewArticlePage() {
           </div>
           <Button
             variant="outline"
-            onClick={() => window.location.href = '/admin/articles'}
+            onClick={() => (window.location.href = "/admin/articles")}
           >
             Back to Articles
           </Button>
@@ -105,7 +129,6 @@ export default function NewArticlePage() {
               id="articleId"
               value={articleId}
               onChange={(e) => setArticleId(e.target.value)}
-              placeholder="Enter unique article ID"
               required
             />
           </div>
@@ -116,20 +139,22 @@ export default function NewArticlePage() {
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter article title"
               required
             />
           </div>
 
           <div>
             <Label htmlFor="content">Content</Label>
-            <Textarea
-              id="content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Enter article content..."
-              className="min-h-[200px]"
-              required
+            <TiptapEditor value={content} onChange={setContent} />
+          </div>
+
+          <div>
+            <Label htmlFor="image">Upload Image (optional)</Label>
+            <Input
+              id="image"
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImage(e.target.files[0])}
             />
           </div>
 
@@ -147,22 +172,27 @@ export default function NewArticlePage() {
             </select>
           </div>
 
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full"
-          >
+          <Button type="submit" disabled={isSubmitting} className="w-full">
             {isSubmitting ? (
               <>
-                <span className="animate-spin">Loading...</span>
-                Submitting
+                <span className="animate-spin">Loading...</span> Submitting
               </>
             ) : (
-              'Submit Article'
+              "Submit Article"
             )}
           </Button>
         </form>
+
+        {content && (
+          <div className="mt-10">
+            <h3 className="text-xl font-semibold mb-2">Preview</h3>
+            <div
+              className="prose max-w-none"
+              dangerouslySetInnerHTML={{ __html: content }}
+            />
+          </div>
+        )}
       </div>
     </DashboardLayout>
-  )
+  );
 }
