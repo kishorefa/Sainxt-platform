@@ -33,6 +33,7 @@ import {
   Eye,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/providers/custom_auth-provider";
 import { useToast } from "@/components/ui/use-toast";
 import {
   AlertDialog,
@@ -58,6 +59,7 @@ export default function AdminArticlesPage() {
   const router = useRouter();
   const { toast } = useToast();
   const params = useParams(); // ✅ this is synchronous
+  const auth = useAuth();
   const id = params.id; // ✅ access it directly
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +71,8 @@ export default function AdminArticlesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [articleToDelete, setArticleToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   const sidebarItems = [
     { title: "Dashboard", href: "/admin/dashboard", icon: TrendingUp },
@@ -88,11 +92,74 @@ export default function AdminArticlesPage() {
       icon: FileText,
       active: true,
     },
+    {
+      title: "Article Cards",
+      href: "/admin/new_article-card",
+      icon: FileText,
+      // active: true,
+    },
   ];
 
   useEffect(() => {
     fetchArticles();
+    fetchUserProfile();
   }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      // Only run on client side
+      if (typeof window === "undefined") {
+        setIsLoadingProfile(false);
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No authentication token found");
+        setIsLoadingProfile(false);
+        return;
+      }
+
+      console.log(
+        "Fetching admin user profile with token:",
+        token.substring(0, 10) + "..."
+      );
+
+      const response = await fetch("http://localhost:5000/api/user/profile", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+
+      console.log("Profile response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error response:", errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Fetched admin user profile:", data);
+      setUserProfile(data);
+
+      // Update the auth context with the full user data
+      if (auth.setUser) {
+        auth.setUser((prev) => ({
+          ...prev,
+          ...data,
+          first_name: data.first_name || prev?.first_name,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching admin user profile:", error);
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
 
   const fetchArticles = async () => {
     try {
@@ -138,6 +205,87 @@ export default function AdminArticlesPage() {
       setIsDeleting(false);
     }
   };
+
+  // Get display name with priority: userProfile > auth.user > localStorage
+  const getDisplayName = () => {
+    // First check the fetched user profile
+    if (userProfile?.first_name) return userProfile.first_name;
+    if (userProfile?.name) return userProfile.name.split(" ")[0];
+
+    // Then check the auth context
+    if (auth.user?.first_name) return auth.user.first_name;
+    if (auth.user?.name) return auth.user.name.split(" ")[0];
+    if (auth.user?.email) return auth.user.email.split("@")[0];
+
+    // Finally check localStorage as fallback
+    try {
+      const storedUser =
+        typeof window !== "undefined" && localStorage.getItem("jobraze-user");
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        return (
+          parsedUser.first_name ||
+          parsedUser.name?.split(" ")[0] ||
+          parsedUser.email?.split("@")[0]
+        );
+      }
+    } catch (e) {
+      console.error("Error parsing stored user:", e);
+    }
+
+    return "Admin User";
+  };
+
+  const userName = getDisplayName();
+  const userEmail =
+    userProfile?.email || auth.user?.email || "admin@sainxt.com";
+
+  // Check authentication
+  if (!auth) {
+    return (
+      <p className="text-center mt-10 text-lg">
+        You must be signed in to access the admin articles page.
+      </p>
+    );
+  }
+
+  const { user, loading: authLoading } = auth;
+
+  // Debug: Log the user object to see what data we have
+  console.log("Admin user object:", JSON.stringify(user, null, 2));
+
+  // Check localStorage directly as well
+  let storedUser = null;
+  if (typeof window !== "undefined") {
+    storedUser = localStorage.getItem("jobraze-user");
+    console.log("Stored admin user in localStorage (raw):", storedUser);
+    try {
+      const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+      console.log("Parsed admin user from localStorage:", parsedUser);
+      console.log(
+        "Available keys in admin user object:",
+        Object.keys(parsedUser || {})
+      );
+    } catch (e) {
+      console.error("Error parsing stored admin user:", e);
+    }
+  }
+
+  if (isLoadingProfile || authLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        Loading user data...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <p className="text-center mt-10 text-lg">
+        You must be signed in to access the admin articles page.
+      </p>
+    );
+  }
 
   // const filteredArticles = articles.filter((article) =>
   const filteredArticles = (articles || []).filter((article) =>
@@ -191,8 +339,10 @@ export default function AdminArticlesPage() {
     <DashboardLayout
       sidebar={<SidebarNav items={sidebarItems} />}
       userRole="admin"
-      userName="Admin User"
-      userEmail="admin@sainxt.com"
+      // userName="Admin User"
+      // userEmail="admin@sainxt.com"
+      userName={userName}
+      userEmail={userEmail}
     >
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">

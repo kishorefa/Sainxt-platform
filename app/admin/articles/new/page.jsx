@@ -52,6 +52,11 @@ export default function NewArticlePage() {
       icon: FileText,
       active: true,
     },
+    {
+      title: "New Article Card",
+      href: "/admin/new_article-card",
+      icon: FileText,
+    },
   ];
 
   const handleSubmit = async (e) => {

@@ -1,10 +1,5 @@
 import { NextResponse } from "next/server";
 
-// ✅ Fix: Await the context parameter destructuring
-// export async function GET(request, context) {
-//   const { params } = context;
-//   const articleId = params.id;
-
 export async function GET(request, { params }) {
   const articleId = params.id;
   const catchAll = params.nextauth;
@@ -31,9 +26,12 @@ export async function GET(request, { params }) {
   }
 }
 
-export async function PUT(request, context) {
-  const { params } = context;
-  const articleId = params.id;
+// export async function PUT(request, context) {
+//   const { params } = context;
+//   const articleId = params.id;
+
+export async function PUT(request, { params }) {
+  const articleId = (await params).id;
 
   if (!articleId) {
     return NextResponse.json(

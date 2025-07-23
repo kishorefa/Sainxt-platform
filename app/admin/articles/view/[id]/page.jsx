@@ -54,6 +54,11 @@ export default function ArticleViewPage() {
       icon: FileText,
       active: true,
     },
+    {
+      title: "New Article Card",
+      href: "/admin/new_article-card",
+      icon: FileText,
+    },
   ];
 
   useEffect(() => {

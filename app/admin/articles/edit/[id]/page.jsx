@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useParams } from "next/navigation";
-// import { Textarea } from "@/components/ui/textarea"
-// import QuillEditor from "@/components/QuillEditor";
 import { useToast } from "@/components/ui/use-toast";
 import dynamic from "next/dynamic";
 import "react-quill/dist/quill.snow.css";
@@ -24,22 +22,22 @@ import {
   FileText,
 } from "lucide-react";
 
-// export default function EditArticlePage({ params }) {
+const TiptapEditor = dynamic(() => import("@/components/TiptapEditor"), {
+  ssr: false,
+  loading: () => <p>Loading editor...</p>,
+});
+
 export default function EditArticlePage() {
   const params = useParams();
   const id = params.id;
   const router = useRouter();
   const { toast } = useToast();
   const [article, setArticle] = useState(null);
+  const [editorContent, setEditorContent] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [image, setImage] = useState(null);
-  // const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
-  const TiptapEditor = dynamic(() => import("@/components/TiptapEditor"), {
-    ssr: false,
-    loading: () => <p>Loading editor...</p>,
-  });
 
   const sidebarItems = [
     { title: "Dashboard", href: "/admin/dashboard", icon: TrendingUp },
@@ -59,6 +57,11 @@ export default function EditArticlePage() {
       icon: FileText,
       active: true,
     },
+    {
+      title: "New Article Card",
+      href: "/admin/new_article-card",
+      icon: FileText,
+    },
   ];
 
   useEffect(() => {
@@ -75,6 +78,7 @@ export default function EditArticlePage() {
       const data = await response.json();
       // setArticle(data.article);
       setArticle(data);
+      setEditorContent(data.content || "");
     } catch (error) {
       setError(error.message);
       toast({
@@ -109,7 +113,8 @@ export default function EditArticlePage() {
         },
         body: JSON.stringify({
           title: article.title,
-          content: article.content,
+          // content: article.content,
+          content: editorContent,
           status: article.status,
           metadata: {
             ...article.metadata,
@@ -200,103 +205,58 @@ export default function EditArticlePage() {
           </Button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              value={article.title}
-              onChange={(e) =>
-                setArticle((prev) => ({ ...prev, title: e.target.value }))
-              }
-              placeholder="Enter article title"
-              required
-            />
-          </div>
+        {article && (
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                value={article.title}
+                onChange={(e) =>
+                  setArticle((prev) => ({ ...prev, title: e.target.value }))
+                }
+                placeholder="Enter article title"
+                required
+              />
+            </div>
 
-          <div>
-            <Label htmlFor="title">Title</Label>
-            {/* <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            /> */}
-            <Input
-              id="title"
-              value={article.title}
-              onChange={(e) =>
-                setArticle((prev) => ({ ...prev, title: e.target.value }))
-              }
-            />
-          </div>
+            <div>
+              <Label htmlFor="content">Content</Label>
 
-          <div>
-            <Label htmlFor="content">Content</Label>
-            {/* <ReactQuill
-              value={content}
-              onChange={setContent}
-              className="bg-white"
-            /> */}
+              <TiptapEditor
+                value={editorContent}
+                onChange={(val) => setEditorContent(val)}
+              />
+            </div>
 
-            <TiptapEditor
-              value={article.content}
-              onChange={(val) =>
-                setArticle((prev) => ({ ...prev, content: val }))
-              }
-            />
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <select
+                id="status"
+                value={article.status}
+                onChange={(e) =>
+                  setArticle((prev) => ({ ...prev, status: e.target.value }))
+                }
+                className="w-full p-2 border border-soft-gray rounded-md bg-surface-primary focus:ring-aqua-blue focus:border-aqua-blue"
+              >
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
 
-            {/* <TiptapEditor
-              value={article.content} // ✅ Fix here
-              onChange={(val) =>
-                setArticle((prev) => ({ ...prev, content: val }))
-              }
-            /> */}
-
-            {/* <ReactQuill
-              value={article.content}
-              onChange={(val) =>
-                setArticle((prev) => ({ ...prev, content: val }))
-              }
-            /> */}
-
-            {/* <Textarea
-              id="content"
-              value={article.content}
-              onChange={(e) => setArticle(prev => ({ ...prev, content: e.target.value }))}
-              placeholder="Enter article content..."
-              className="min-h-[200px]"
-              required
-            /> */}
-          </div>
-
-          <div>
-            <Label htmlFor="status">Status</Label>
-            <select
-              id="status"
-              value={article.status}
-              onChange={(e) =>
-                setArticle((prev) => ({ ...prev, status: e.target.value }))
-              }
-              className="w-full p-2 border border-soft-gray rounded-md bg-surface-primary focus:ring-aqua-blue focus:border-aqua-blue"
-            >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-              <option value="archived">Archived</option>
-            </select>
-          </div>
-
-          <Button type="submit" disabled={isSubmitting} className="w-full">
-            {isSubmitting ? (
-              <>
-                <span className="animate-spin">Loading...</span>
-                Updating
-              </>
-            ) : (
-              "Update Article"
-            )}
-          </Button>
-        </form>
+            <Button type="submit" disabled={isSubmitting} className="w-full">
+              {isSubmitting ? (
+                <>
+                  <span className="animate-spin">Loading...</span>
+                  Updating
+                </>
+              ) : (
+                "Update Article"
+              )}
+            </Button>
+          </form>
+        )}
       </div>
     </DashboardLayout>
   );
