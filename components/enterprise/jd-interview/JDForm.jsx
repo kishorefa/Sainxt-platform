@@ -36,7 +36,7 @@ const JDForm = () => {
 console.log("submitted");
 
     try {
-      const response = await fetch("http://192.168.0.207:5001/generate", {
+      const response = await fetch("http://192.168.0.207:5000/api/jd/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jd_text: jdText }),
@@ -71,7 +71,7 @@ console.log("submitted");
 
     setStatusMessage("Saving...");
     try {
-      const response = await fetch("http://192.168.0.207:5001/save_interview_questions", {
+      const response = await fetch("http://192.168.0.207:5000/api/jd/save_interview_questions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -111,7 +111,7 @@ console.log("submitted");
     setInterviewDetails(null);
     
     try {
-      const response = await fetch("http://192.168.0.207:5001/send_mail", {
+      const response = await fetch("http://192.168.0.207:5000/api/jd/send_mail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

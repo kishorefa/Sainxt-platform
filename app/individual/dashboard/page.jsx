@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { getToken, isTokenExpired, refreshToken, clearAuthTokens } from "@/lib/auth";
+import { customFetch } from "@/lib/auth-interceptor";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { useAuth } from "@/components/providers/custom_auth-provider";
@@ -135,9 +138,24 @@ const upcomingEvents = [
 ];
 
 export default function IndividualDashboard() {
+  const router = useRouter();
   const auth = useAuth();
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Handle unauthorized events (e.g., when token refresh fails)
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      console.log('Unauthorized access detected, redirecting to login');
+      router.push('/auth/login');
+    };
+
+    window.addEventListener('unauthorized', handleUnauthorized);
+    
+    return () => {
+      window.removeEventListener('unauthorized', handleUnauthorized);
+    };
+  }, [router]);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -148,25 +166,34 @@ export default function IndividualDashboard() {
           return;
         }
 
-        const token = localStorage.getItem('token');
+        const token = getToken();
         if (!token) {
-          console.error('No authentication token found');
-          setIsLoading(false);
+          console.log('No authentication token found, redirecting to login');
+          router.push('/auth/login');
           return;
         }
 
-        console.log('Fetching user profile with token:', token.substring(0, 10) + '...');
+        // Check if token is expired and try to refresh it
+        if (isTokenExpired()) {
+          try {
+            console.log('Token expired, attempting to refresh...');
+            const newTokens = await refreshToken();
+            if (!newTokens?.access_token) {
+              throw new Error('Failed to refresh token');
+            }
+            console.log('Token refreshed successfully');
+          } catch (error) {
+            console.error('Token refresh failed:', error);
+            clearAuthTokens();
+            window.dispatchEvent(new Event('unauthorized'));
+            return;
+          }
+        }
         
-        const response = await fetch('http://192.168.0.207:5000/api/user/profile', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include'
+        console.log('Fetching user profile...');
+        const response = await customFetch('/api/user/profile', {
+          method: 'GET'
         });
-        
-        console.log('Profile response status:', response.status);
         
         if (!response.ok) {
           const errorText = await response.text();
@@ -188,6 +215,9 @@ export default function IndividualDashboard() {
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
+        if (error.message.includes('401') || error.message.includes('403')) {
+          window.dispatchEvent(new Event('unauthorized'));
+        }
       } finally {
         setIsLoading(false);
       }
@@ -196,11 +226,31 @@ export default function IndividualDashboard() {
     fetchUserProfile();
   }, [auth]);
 
-  if (!auth) {
+  // Check for auth and token only on client side
+  const [isClient, setIsClient] = useState(false);
+  
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
+    // Show loading state during server-side rendering
     return (
-      <p className="text-center mt-10 text-lg">
-        You must be signed in to access the dashboard.
-      </p>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-coral"></div>
+      </div>
+    );
+  }
+
+  if (!auth || !localStorage.getItem('token')) {
+    // Show loading state while redirecting
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-coral"></div>
+        <p className="text-center text-lg text-gray-600">
+          Redirecting to login...
+        </p>
+      </div>
     );
   }
 

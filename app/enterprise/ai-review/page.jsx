@@ -185,7 +185,7 @@ export default function AIReviewPage() {
     setAiReview(null);
     
     try {
-      const response = await fetch(`http://localhost:5001/api/responses/${encodeURIComponent(email)}`);
+      const response = await fetch(`http://localhost:5000/api/report/responses/${encodeURIComponent(email)}`);
       const data = await response.json();
       
       if (response.ok) {
@@ -221,7 +221,7 @@ export default function AIReviewPage() {
     setError('');
     
     try {
-      const response = await fetch('http://localhost:5001/api/ai_review', {
+      const response = await fetch('http://localhost:5000/api/report/ai_review', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

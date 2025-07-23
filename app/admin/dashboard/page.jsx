@@ -1,8 +1,11 @@
 "use client"
 
-import React from "react"
+import React, { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuthCheck } from "@/hooks/useAuthCheck"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { SidebarNav } from "@/components/layout/sidebar-nav"
+import { useAuth } from "@/components/providers/custom_auth-provider"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -154,12 +157,80 @@ function getHealthStatus(value, threshold) {
 }
 
 export default function AdminDashboard() {
+  const auth = useAuth();
+  const router = useRouter();
+  const [userProfile, setUserProfile] = useState(null);
+  const { isLoading } = useAuthCheck('admin');
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        // Only run on client side
+        if (typeof window === 'undefined') {
+          setIsLoading(false);
+          return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.log('No authentication token found, redirecting to login');
+          router.push('/auth/login');
+          return;
+        }
+
+        const response = await fetch('http://192.168.0.207:5000/api/user/profile', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Error response:', errorText);
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setUserProfile(data);
+        
+        // Update the auth context with the full user data
+        if (auth.setUser) {
+          auth.setUser(prev => ({
+            ...prev,
+            ...data,
+            first_name: data.first_name || prev?.first_name
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [auth, router]);
+
+  // Show loading state during authentication check
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+
+
   return (
     <DashboardLayout
       sidebar={<SidebarNav items={sidebarItems} />}
       userRole="admin"
-      userName="Admin User"
-      userEmail="admin@sainxt.com"
+      userName={userProfile?.first_name ? `${userProfile.first_name} ${userProfile.last_name || ''}`.trim() : 'Admin User'}
+      userEmail={userProfile?.email || 'admin@sainxt.com'}
     >
       <div className="space-y-6">
         {/* Breadcrumb */}

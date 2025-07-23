@@ -402,7 +402,7 @@ const LiveInterview = ({ username: propUsername }) => {
     const fetchJobDescriptions = async () => {
       try {
         const response = await fetch(
-          "http://192.168.0.207:5001/get_job_descriptions"
+          "http://192.168.0.207:5000/api/jd/get_job_descriptions"
         );
         if (response.ok) {
           const data = await response.json();
@@ -449,7 +449,7 @@ const LiveInterview = ({ username: propUsername }) => {
     const fetchQuestions = async () => {
       try {
         const response = await fetch(
-          `http://192.168.0.207:5001/get_questions/${selectedJdId}`
+          `http://192.168.0.207:5000/api/jd/get_questions/${selectedJdId}`
         );
         if (response.ok) {
           const data = await response.json();
@@ -561,7 +561,7 @@ const LiveInterview = ({ username: propUsername }) => {
       console.log("Submitting interview with data:", JSON.stringify(requestBody, null, 2));
 
       const response = await fetch(
-        "http://192.168.0.207:5001/submit_interview",
+        "http://192.168.0.207:5000/api/jd/submit_interview",
         {
           method: "POST",
           headers: {

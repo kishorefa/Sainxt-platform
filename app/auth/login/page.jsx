@@ -29,6 +29,32 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { setAuthTokens } from "@/lib/auth";
+
+// Set up auto token refresh
+const setupAutoRefresh = (expiresIn) => {
+  // Refresh token 5 minutes before it expires
+  const refreshTime = (expiresIn - 300) * 1000;
+  
+  // Clear any existing refresh timeout
+  if (window.refreshTimeout) {
+    clearTimeout(window.refreshTimeout);
+  }
+  
+  window.refreshTimeout = setTimeout(async () => {
+    try {
+      const data = await refreshToken();
+      // Set up next refresh
+      setupAutoRefresh(data.expires_in || 3600);
+    } catch (error) {
+      console.error('Auto refresh failed:', error);
+      // On failure, clear auth and redirect to login
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('unauthorized'));
+      }
+    }
+  }, refreshTime);
+};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -113,9 +139,12 @@ export default function LoginPage() {
         throw new Error(data.detail || "Login failed");
       }
 
-      // Save token to local storage
-
-      localStorage.setItem("token", data.access_token);
+      // Save tokens using our auth utility
+      setAuthTokens({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_in: data.expires_in || 3600 // Default to 1 hour if not provided
+      });
 
       try {
         const payload = JSON.parse(atob(data.access_token.split(".")[1]));
@@ -125,7 +154,6 @@ export default function LoginPage() {
           userType: payload.userType,
           name: payload.name || data.first_name || payload.email.split("@")[0],
           first_name: data.first_name || payload.name?.split(" ")[0] || payload.email.split("@")[0],
-          // Include any other user data from the login response
           ...data.user
         };
         
@@ -136,6 +164,9 @@ export default function LoginPage() {
         if (window.refreshUser) {
           window.refreshUser();
         }
+        
+        // Set up auto token refresh
+        setupAutoRefresh(data.expires_in || 3600);
       } catch (err) {
         console.error("Error processing login response:", err);
       }

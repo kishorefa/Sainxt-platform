@@ -23,7 +23,7 @@ const InterviewAccess = () => {
     setError("");
     
     try {
-      const response = await fetch("http://192.168.0.207:5001/verify_interview_access", {
+      const response = await fetch("http://192.168.0.207:5000/api/jd/verify_interview_access", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
