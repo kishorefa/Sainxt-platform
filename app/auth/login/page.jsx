@@ -84,7 +84,7 @@ export default function LoginPage() {
 
     try {
       // FastAPI backend URL - running on port 5000
-      const apiUrl = "http://192.168.0.207:5000";
+      const apiUrl = "http://localhost:5000";
       const response = await fetch(`${apiUrl}/api/login`, {
         method: "POST",
         headers: {
@@ -124,14 +124,17 @@ export default function LoginPage() {
           email: payload.email,
           userType: payload.userType,
           name: payload.name || data.first_name || payload.email.split("@")[0],
-          first_name: data.first_name || payload.name?.split(" ")[0] || payload.email.split("@")[0],
+          first_name:
+            data.first_name ||
+            payload.name?.split(" ")[0] ||
+            payload.email.split("@")[0],
           // Include any other user data from the login response
-          ...data.user
+          ...data.user,
         };
-        
+
         // Store the complete user data in localStorage
         localStorage.setItem("jobraze-user", JSON.stringify(userData));
-        
+
         // Force refresh the auth context
         if (window.refreshUser) {
           window.refreshUser();

@@ -23,6 +23,9 @@ ChartJS.register(
 );
 
 const RadarSkillChart = ({ scores }) => {
+  // Handle undefined or null scores
+  if (!scores) return null;
+
   const data = {
     labels: [
       "Communication",
@@ -60,8 +63,7 @@ const RadarSkillChart = ({ scores }) => {
           backdropColor: "transparent",
         },
         pointLabels: {
-          color: "#374151", // gray-700
-
+          color: "#374151",
           font: {
             size: 14,
           },

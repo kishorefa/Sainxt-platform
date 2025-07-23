@@ -1,16 +1,16 @@
-"use client"
+"use client";
 
-import React from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-import { cn } from "@/lib/utils"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { ChevronRight, Zap, Sparkles } from "lucide-react"
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ChevronRight, Zap, Sparkles } from "lucide-react";
 
 export function SidebarNav({ items }) {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   return (
     <div className="flex flex-col h-full">
@@ -27,8 +27,8 @@ export function SidebarNav({ items }) {
 
         <nav className="space-y-2">
           {items.map((item) => {
-            const Icon = item.icon
-            const isActive = pathname === item.href
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
 
             return (
               <Link key={item.href} href={item.href}>
@@ -56,7 +56,9 @@ export function SidebarNav({ items }) {
                     <Icon className="h-4 w-4" />
                   </div>
 
-                  <span className="flex-1 text-left font-medium">{item.title}</span>
+                  <span className="flex-1 text-left font-medium">
+                    {item.title}
+                  </span>
 
                   {item.badge && (
                     <Badge className="ml-2 bg-electric-orange text-white text-xs animate-ai-pulse">
@@ -64,17 +66,17 @@ export function SidebarNav({ items }) {
                     </Badge>
                   )}
 
-                  {isActive && <ChevronRight className="h-4 w-4 text-neon-coral" />}
+                  {isActive && (
+                    <ChevronRight className="h-4 w-4 text-neon-coral" />
+                  )}
 
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                 </Button>
               </Link>
-            )
+            );
           })}
         </nav>
       </div>
-
-   
     </div>
-  )
+  );
 }

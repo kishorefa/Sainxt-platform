@@ -1,85 +1,90 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Lock, CheckCircle, XCircle } from "lucide-react"
+import * as React from "react";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Lock, CheckCircle, XCircle } from "lucide-react";
 
 export default function ResetPasswordPage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const token = searchParams.get('token')
-  
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState(false)
-  const [tokenValid, setTokenValid] = useState(null)
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
+
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [tokenValid, setTokenValid] = useState(null);
 
   // Check if token is valid on component mount
   useEffect(() => {
     if (!token) {
-      setError("Invalid or missing reset token")
-      setTokenValid(false)
+      setError("Invalid or missing reset token");
+      setTokenValid(false);
     } else {
-      setTokenValid(true)
+      setTokenValid(true);
     }
-  }, [token])
+  }, [token]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     if (password !== confirmPassword) {
-      setError("Passwords do not match")
-      return
+      setError("Passwords do not match");
+      return;
     }
-    
+
     if (password.length < 8) {
-      setError("Password must be at least 8 characters long")
-      return
+      setError("Password must be at least 8 characters long");
+      return;
     }
-    
-    setIsLoading(true)
-    setError("")
-    
+
+    setIsLoading(true);
+    setError("");
+
     try {
-      const response = await fetch('http://192.168.0.207:5000/api/reset-password', {
-        method: 'POST',
+      const response = await fetch("http://localhost:5000/api/reset-password", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           token,
-          newPassword: password
+          newPassword: password,
         }),
-      })
-      
-      const data = await response.json()
-      
+      });
+
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to reset password')
+        throw new Error(data.error || "Failed to reset password");
       }
-      
-      setSuccess(true)
-      
+
+      setSuccess(true);
+
       // Redirect to login after 3 seconds
       setTimeout(() => {
-        router.push('/auth/login')
-      }, 3000)
-      
+        router.push("/auth/login");
+      }, 3000);
     } catch (err) {
-      setError(err.message || 'Failed to reset password. Please try again.')
-      console.error('Reset password error:', err)
+      setError(err.message || "Failed to reset password. Please try again.");
+      console.error("Reset password error:", err);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   if (success) {
     return (
@@ -90,21 +95,21 @@ export default function ResetPasswordPage() {
               <CheckCircle className="h-12 w-12 text-green-500" />
             </div>
             <CardTitle>Password Reset Successful</CardTitle>
-            <CardDescription>Your password has been successfully updated.</CardDescription>
+            <CardDescription>
+              Your password has been successfully updated.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground text-center">
               You will be redirected to the login page shortly...
             </p>
             <Link href="/auth/login">
-              <Button className="w-full">
-                Go to Login
-              </Button>
+              <Button className="w-full">Go to Login</Button>
             </Link>
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   if (tokenValid === false) {
@@ -116,21 +121,21 @@ export default function ResetPasswordPage() {
               <XCircle className="h-12 w-12 text-red-500" />
             </div>
             <CardTitle>Invalid Reset Link</CardTitle>
-            <CardDescription>The password reset link is invalid or has expired.</CardDescription>
+            <CardDescription>
+              The password reset link is invalid or has expired.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground text-center">
               Please request a new password reset link.
             </p>
             <Link href="/auth/forgot-password">
-              <Button className="w-full">
-                Request New Reset Link
-              </Button>
+              <Button className="w-full">Request New Reset Link</Button>
             </Link>
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -179,21 +184,37 @@ export default function ResetPasswordPage() {
                 {error}
               </div>
             )}
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full"
               disabled={isLoading || tokenValid === null}
             >
               {isLoading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Resetting...
                 </>
               ) : (
-                'Reset Password'
+                "Reset Password"
               )}
             </Button>
           </form>
@@ -205,5 +226,5 @@ export default function ResetPasswordPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
