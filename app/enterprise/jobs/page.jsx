@@ -364,7 +364,7 @@ export default function JobListingsPage() {
     };
 
     fetchUserProfile();
-  }, [auth]);
+  }, []);
 
   if (!auth) {
     return (

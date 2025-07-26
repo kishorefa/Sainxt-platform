@@ -231,7 +231,7 @@ export default function AdminDashboard() {
     };
 
     fetchUserProfile();
-  }, [auth]);
+  }, []);
 
   if (!auth) {
     return (

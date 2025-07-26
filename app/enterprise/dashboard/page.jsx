@@ -250,7 +250,7 @@ export default function EnterpriseDashboard() {
     };
 
     fetchUserProfile();
-  }, [auth]);
+  }, []);
 
   if (!auth) {
     return (

@@ -154,7 +154,7 @@ export default function JobsPage() {
     };
 
     fetchUserProfile();
-  }, [auth, router]);
+  }, []);
 
   const experienceLevels = [
     { id: "all", label: "All Levels" },

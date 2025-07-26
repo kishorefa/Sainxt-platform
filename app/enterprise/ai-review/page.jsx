@@ -118,7 +118,7 @@ export default function AIReviewPage() {
     };
 
     fetchUserProfile();
-  }, [auth]);
+  }, []);
 
   useEffect(() => {
     setIsClient(true);

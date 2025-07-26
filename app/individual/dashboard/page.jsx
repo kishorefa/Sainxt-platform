@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { useAuth } from "@/components/providers/custom_auth-provider";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -135,9 +136,11 @@ const upcomingEvents = [
 ];
 
 export default function IndividualDashboard() {
+  const router = useRouter();
   const auth = useAuth();
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [trainingProgress, setTrainingProgress] = useState(null);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -196,8 +199,29 @@ export default function IndividualDashboard() {
       }
     };
 
+    const fetchTrainingProgress = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          "http://localhost:5000/api/user/training-progress/get",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await res.json();
+        console.log("Training Progress:", data);
+        setTrainingProgress(data);
+      } catch (err) {
+        console.error("Failed to fetch training progress", err);
+      }
+    };
+
+    fetchTrainingProgress();
     fetchUserProfile();
-  }, [auth]);
+  }, []);
 
   if (!auth) {
     return (
@@ -521,7 +545,7 @@ export default function IndividualDashboard() {
               </Card>
 
               {/* Certificates */}
-              <Card className="hover:shadow-enterprise-lg transition-shadow card-enterprise">
+              {/* <Card className="hover:shadow-enterprise-lg transition-shadow card-enterprise">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-deep-navy">
                     <Award className="h-5 w-5 text-electric-orange" />
@@ -574,6 +598,114 @@ export default function IndividualDashboard() {
                       </Button>
                     </div>
                   </div>
+                  <Button
+                    variant="outline"
+                    className="w-full border-soft-gray text-deep-navy hover:bg-surface-secondary"
+                  >
+                    View All Certificates
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardContent>
+              </Card> */}
+              <Card className="hover:shadow-enterprise-lg transition-shadow card-enterprise">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-deep-navy">
+                    <Award className="h-5 w-5 text-electric-orange" />
+                    My Certificates
+                  </CardTitle>
+                  <CardDescription className="text-text-gray">
+                    Download and share your achievements
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    {/* Hardcoded Certificate 1 */}
+                    <div className="flex items-center justify-between p-3 border border-soft-gray rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-aqua-blue/10 rounded-lg flex items-center justify-center">
+                          <Award className="h-5 w-5 text-aqua-blue" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-deep-navy">
+                            Python Basics
+                          </p>
+                          <p className="text-sm text-text-gray">Completed</p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-soft-gray text-deep-navy hover:bg-surface-secondary"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* Hardcoded Certificate 2 */}
+                    <div className="flex items-center justify-between p-3 border border-soft-gray rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-electric-orange/10 rounded-lg flex items-center justify-center">
+                          <Award className="h-5 w-5 text-electric-orange" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-deep-navy">
+                            Data Analysis
+                          </p>
+                          <p className="text-sm text-text-gray">Completed</p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-soft-gray text-deep-navy hover:bg-surface-secondary"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* 🧠 Dynamic Certificate: AI101 Introductory Training */}
+                    <div className="flex items-center justify-between p-3 border border-soft-gray rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                            trainingProgress?.certificateIssued
+                              ? "bg-electric-orange/10"
+                              : "bg-gray-100"
+                          }`}
+                        >
+                          <Award
+                            className={`h-5 w-5 ${
+                              trainingProgress?.certificateIssued
+                                ? "text-electric-orange"
+                                : "text-gray-500"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <p className="font-medium text-deep-navy">
+                            AI101 Introductory Training
+                          </p>
+                          <p className="text-sm text-text-gray">
+                            {trainingProgress?.certificateIssued
+                              ? "Completed"
+                              : "In Progress"}
+                          </p>
+                        </div>
+                      </div>
+                      {trainingProgress?.certificateIssued && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            router.push("/individual/certificates")
+                          }
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
                   <Button
                     variant="outline"
                     className="w-full border-soft-gray text-deep-navy hover:bg-surface-secondary"

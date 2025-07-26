@@ -75,6 +75,21 @@ const CertificatePage = () => {
 
     pdf.addImage(imgData, "PNG", 0, verticalOffset, pdfWidth, finalHeight);
     pdf.save("certificate.pdf");
+
+    const blob = pdf.output("blob");
+    const formData = new FormData();
+    formData.append("file", blob, "ai101_certificate.pdf");
+
+    await fetch(
+      "http://localhost:5000/api/user/training-progress/upload-certificate",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      }
+    );
   };
 
   return (

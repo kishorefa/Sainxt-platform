@@ -101,7 +101,7 @@ export default function JDInterviewPage() {
     };
 
     fetchUserProfile();
-  }, [auth]);
+  }, []);
 
   if (!auth) {
     return (

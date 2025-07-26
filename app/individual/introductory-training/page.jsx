@@ -82,6 +82,7 @@ export default function AITrainingSessionPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const videoContainerRef = useRef(null);
   const videoRef = useRef(null);
+
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -133,8 +134,48 @@ export default function AITrainingSessionPage() {
       }
     };
 
+    // fetchUserProfile();
+    const fetchProgress = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          "http://localhost:5000/api/user/training-progress/get",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await res.json();
+
+        if (data.completedVideos) {
+          setCompletedVideos(new Set(data.completedVideos));
+        }
+        if (data.watchedVideos) {
+          setWatchedVideos(new Set(data.watchedVideos));
+        }
+
+        if (data.certificateIssued) {
+          setCurrentVideoIndex(videoLessons.length - 1);
+          // Don't call setShowSuccess here to prevent popup
+        } else if (data.completedVideos?.length > 0) {
+          const lastCompleted = Math.max(...data.completedVideos);
+          setCurrentVideoIndex(
+            lastCompleted + 1 < videoLessons.length
+              ? lastCompleted + 1
+              : lastCompleted
+          );
+        }
+      } catch (err) {
+        console.error("Error fetching progress:", err);
+      }
+    };
+
+    // fetchUserProfile().then(fetchProgress);
     fetchUserProfile();
-  }, [auth, router]);
+    fetchProgress();
+  }, []);
 
   if (isLoading) {
     return (
@@ -156,6 +197,49 @@ export default function AITrainingSessionPage() {
   const currentQuestion = questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
   const isVideoWatched = watchedVideos.has(currentVideoIndex);
+
+  // const saveProgressToServer = async () => {
+  //   try {
+  //     const token = localStorage.getItem("token");
+  //     await fetch("http://localhost:5000/api/user/save-training-progress", {
+  //       method: "POST",
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({
+  //         completedVideos: Array.from(completedVideos),
+  //         watchedVideos: Array.from(watchedVideos),
+  //         certificateIssued: completedVideos.size === videoLessons.length,
+  //       }),
+  //     });
+  //   } catch (error) {
+  //     console.error("Failed to save progress:", error);
+  //   }
+  // };
+  const saveProgressToServer = async ({
+    completedVideos,
+    watchedVideos,
+    certificateIssued,
+  }) => {
+    try {
+      const token = localStorage.getItem("token");
+      await fetch("http://localhost:5000/api/user/training-progress/save", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          completedVideos,
+          watchedVideos,
+          certificateIssued,
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to save progress:", error);
+    }
+  };
 
   const handleVideoComplete = () => {
     // Mark video as watched
@@ -283,9 +367,15 @@ export default function AITrainingSessionPage() {
       // If score is perfect (10/10), show success animation
       if (result.score === result.total) {
         const newCompletedVideos = new Set(completedVideos);
-        newCompletedVideos.add(0); // Mark first video as completed
+        // newCompletedVideos.add(0); // Mark first video as completed
+        newCompletedVideos.add(currentVideoIndex); // ✅ dynamic
         setCompletedVideos(newCompletedVideos);
         setShowSuccess(true);
+        saveProgressToServer({
+          completedVideos: Array.from(newCompletedVideos),
+          watchedVideos: Array.from(watchedVideos),
+          certificateIssued: newCompletedVideos.size === videoLessons.length,
+        });
       }
     } catch (error) {
       console.error("Error submitting answers:", error);
@@ -461,61 +551,6 @@ export default function AITrainingSessionPage() {
                   </div>
                 );
               })}
-
-              {/* {videoLessons.map((video, index) => (
-                <div
-                  key={video.id}
-                  onClick={() => handleVideoSelect(index)}
-                  className={`p-3 rounded-lg mb-2 cursor-pointer transition-colors ${
-                    currentVideoIndex === index
-                      ? "bg-blue-50 border border-blue-200"
-                      : "hover:bg-gray-50"
-                  }`}
-                >
-                  <div className="flex items-center">
-                    <div className="relative w-16 h-10 bg-gray-200 rounded-md overflow-hidden flex-shrink-0">
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 opacity-70"></div>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        {completedVideos.has(index) ? (
-                          <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                            <svg
-                              className="w-3 h-3 text-white"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          </div>
-                        ) : (
-                          <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center">
-                            <span className="text-xs font-medium text-gray-500">
-                              {index + 1}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="ml-3 flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {video.title}
-                      </p>
-                      <div className="flex items-center mt-0.5">
-                        <span className="text-xs text-gray-500">
-                          {video.duration}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-              } */}
             </div>
           </div>
 
