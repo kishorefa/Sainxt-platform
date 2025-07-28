@@ -1,50 +1,58 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 
-
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Mail, ArrowLeft, CheckCircle } from "lucide-react"
+import { useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("")
-  const [isSubmitted, setIsSubmitted] = useState(false)
-const [isLoading, setIsLoading] = useState(false)
-const [error, setError] = useState(null)
+  const [email, setEmail] = useState("");
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-const handleSubmit = async (e) => {
-  e.preventDefault()
-  setIsLoading(true)
-  setError(null)
-  
-  try {
-    const response = await fetch('http://192.168.0.207:5000/api/forgot-password', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email }),
-    })
-    
-    const data = await response.json()
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Something went wrong')
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        "http://192.168.0.207:5000/api/forgot-password",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Something went wrong");
+      }
+
+      setIsSubmitted(true);
+    } catch (err) {
+      setError(err.message || "Failed to send reset link. Please try again.");
+      console.error("Forgot password error:", err);
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsSubmitted(true)
-  } catch (err) {
-    setError(err.message || 'Failed to send reset link. Please try again.')
-    console.error('Forgot password error:', err)
-  } finally {
-    setIsLoading(false)
-  }
-}
+  };
 
   if (isSubmitted) {
     return (
@@ -55,12 +63,18 @@ const handleSubmit = async (e) => {
               <CheckCircle className="h-12 w-12 text-green-500" />
             </div>
             <CardTitle>Check your email</CardTitle>
-            <CardDescription>We've sent a password reset link to {email}</CardDescription>
+            <CardDescription>
+              We've sent a password reset link to {email}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground text-center">
               Didn't receive the email? Check your spam folder or{" "}
-              <Button variant="link" className="p-0 h-auto text-blue-600" onClick={() => setIsSubmitted(false)}>
+              <Button
+                variant="link"
+                className="p-0 h-auto text-blue-600"
+                onClick={() => setIsSubmitted(false)}
+              >
                 try again
               </Button>
             </p>
@@ -73,7 +87,7 @@ const handleSubmit = async (e) => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -81,7 +95,10 @@ const handleSubmit = async (e) => {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Reset your password</CardTitle>
-          <CardDescription>Enter your email address and we'll send you a link to reset your password</CardDescription>
+          <CardDescription>
+            Enter your email address and we'll send you a link to reset your
+            password
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -105,21 +122,33 @@ const handleSubmit = async (e) => {
                 {error}
               </div>
             )}
-            <Button 
-              type="submit" 
-              className="w-full"
-              disabled={isLoading}
-            >
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Sending...
                 </>
               ) : (
-                'Send reset link'
+                "Send reset link"
               )}
             </Button>
           </form>
@@ -134,5 +163,5 @@ const handleSubmit = async (e) => {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

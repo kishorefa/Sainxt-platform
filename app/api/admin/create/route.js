@@ -1,40 +1,42 @@
-import { NextResponse } from 'next/server';
-import { headers } from 'next/headers';
+import { NextResponse } from "next/server";
+import { headers } from "next/headers";
 
 export async function POST(request) {
   try {
-    const headersList = headers();
-    const contentType = headersList.get('content-type');
-    
-    if (!contentType?.includes('application/json')) {
+    // const headersList = headers();
+    // const contentType = headersList.get('content-type');
+    const headersList = await headers();
+    const contentType = headersList.get("content-type");
+
+    if (!contentType?.includes("application/json")) {
       return NextResponse.json(
-        { error: 'Content-Type must be application/json' },
+        { error: "Content-Type must be application/json" },
         { status: 400 }
       );
     }
 
     const body = await request.json();
-    
+
     // Forward request to backend
-    const response = await fetch('http://localhost:5000/api/admin', {
-      method: 'POST',
+    const response = await fetch("http://192.168.0.207:5000/api/admin", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
     });
 
     const data = await response.json();
-    
+
     if (!response.ok) {
       return NextResponse.json(data, { status: response.status });
     }
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error in admin creation:', error);
+    console.error("Error in admin creation:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

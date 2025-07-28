@@ -23,8 +23,8 @@ import {
 import { TrainingVideo } from "@/components/training/TrainingVideo";
 import { SuccessAnimation } from "@/components/training/SuccessAnimation";
 import { useAuth } from "@/components/providers/custom_auth-provider";
-import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 const sidebarItems = [
   { title: "Dashboard", href: "/individual/dashboard", icon: Sparkles },
@@ -35,7 +35,10 @@ const sidebarItems = [
   //  { title: "Certificates", href: "/individual/certificates", icon: Award },
   //  { title: "Training Programs", href: "/individual/training", icon: GraduationCap },
   {
-    title: "Thought Leadership",href: "/individual/thought-leadership",icon: BookOpen},
+    title: "Thought Leadership",
+    href: "/individual/thought-leadership",
+    icon: BookOpen,
+  },
   { title: "View Jobs", href: "/individual/jobs", icon: BookOpen },
 ];
 
@@ -83,55 +86,114 @@ export default function AITrainingSessionPage() {
     const fetchUserProfile = async () => {
       try {
         // Only run on client side
-        if (typeof window === 'undefined') {
+        if (typeof window === "undefined") {
           setIsLoading(false);
           return;
         }
 
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         if (!token) {
-          console.error('No authentication token found');
+          console.error("No authentication token found");
           setIsLoading(false);
-          router.push('/auth/login');
+          router.push("/auth/login");
           return;
         }
 
-        const response = await fetch('http://192.168.0.207:5000/api/user/profile', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include'
-        });
+        console.log("Attempting to fetch user profile...");
         
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Error response:', errorText);
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        setUserProfile(data);
-        
-        // Update the auth context with the full user data
-        if (auth.setUser) {
-          auth.setUser(prev => ({
-            ...prev,
-            ...data,
-            first_name: data.first_name || prev?.first_name
-          }));
+        try {
+          const response = await fetch("http://192.168.0.207:5000/api/user/profile", {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          });
+
+          console.log("Profile response status:", response.status);
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Error response:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          console.log("Successfully fetched user profile:", data);
+          setUserProfile(data);
+
+          // Update the auth context with the full user data
+          if (auth.setUser) {
+            auth.setUser((prev) => ({
+              ...prev,
+              ...data,
+              first_name: data.first_name || prev?.first_name,
+            }));
+          }
+        } catch (error) {
+          console.error("Error in fetchUserProfile:", error);
+          if (error.message.includes('Failed to fetch')) {
+            console.error('Backend server might be down or unreachable at http://192.168.0.207:5000');
+            // Show user-friendly error message
+            alert('Unable to connect to the server. Please check your internet connection or try again later.');
+          } else if (error.message.includes('401') || error.message.includes('403')) {
+            console.error('Authentication error, redirecting to login');
+            router.push("/auth/login");
+          }
+        } finally {
+          setIsLoading(false);
         }
       } catch (error) {
-        console.error('Error fetching user profile:', error);
-        router.push('/auth/login');
+        console.error("Error fetching user profile:", error);
+        router.push("/auth/login");
       } finally {
         setIsLoading(false);
       }
     };
 
+    const fetchProgress = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          "http://localhost:5000/api/user/training-progress/get",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+ 
+        const data = await res.json();
+ 
+        if (data.completedVideos) {
+          setCompletedVideos(new Set(data.completedVideos));
+        }
+        if (data.watchedVideos) {
+          setWatchedVideos(new Set(data.watchedVideos));
+        }
+ 
+        if (data.certificateIssued) {
+          setCurrentVideoIndex(videoLessons.length - 1);
+          // Don't call setShowSuccess here to prevent popup
+        } else if (data.completedVideos?.length > 0) {
+          const lastCompleted = Math.max(...data.completedVideos);
+          setCurrentVideoIndex(
+            lastCompleted + 1 < videoLessons.length
+              ? lastCompleted + 1
+              : lastCompleted
+          );
+        }
+      } catch (err) {
+        console.error("Error fetching progress:", err);
+      }
+    };
+ 
+    // fetchUserProfile().then(fetchProgress);
     fetchUserProfile();
-  }, [auth, router]);
+    fetchProgress();
+  }, []);
+
 
   if (isLoading) {
     return (
@@ -141,14 +203,42 @@ export default function AITrainingSessionPage() {
     );
   }
 
-  const userName = userProfile?.first_name || auth?.user?.first_name || auth?.user?.name || 'User';
-  const userEmail = userProfile?.email || auth?.user?.email || '';
+  const userName =
+    userProfile?.first_name ||
+    auth?.user?.first_name ||
+    auth?.user?.name ||
+    "User";
+  const userEmail = userProfile?.email || auth?.user?.email || "";
 
   const currentVideo = videoLessons[currentVideoIndex];
   const allVideosCompleted = completedVideos.size === videoLessons.length;
   const currentQuestion = questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
   const isVideoWatched = watchedVideos.has(currentVideoIndex);
+
+  const saveProgressToServer = async ({
+    completedVideos,
+    watchedVideos,
+    certificateIssued,
+  }) => {
+    try {
+      const token = localStorage.getItem("token");
+      await fetch("http://localhost:5000/api/user/training-progress/save", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          completedVideos,
+          watchedVideos,
+          certificateIssued,
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to save progress:", error);
+    }
+  };
 
   const handleVideoComplete = () => {
     // Mark video as watched
@@ -163,7 +253,7 @@ export default function AITrainingSessionPage() {
       alert("Please complete the previous lesson first.");
       return;
     }
-    
+
     // Pause current video if playing
     if (videoRef.current) {
       videoRef.current.pause();
@@ -171,7 +261,10 @@ export default function AITrainingSessionPage() {
 
     setCurrentVideoIndex(index);
     if (videoContainerRef.current) {
-      videoContainerRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      videoContainerRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
     }
   };
 
@@ -181,7 +274,7 @@ export default function AITrainingSessionPage() {
       const category = currentVideo?.category || "ai";
 
       const response = await fetch(
-        `http://localhost:5000/api/mcqs/start-assignment?category=${category}`
+        `http://192.168.0.207:5000/api/mcqs/start-assignment?category=${category}`
       );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -202,7 +295,11 @@ export default function AITrainingSessionPage() {
       // Pause the video when starting the assignment
       if (videoRef.current && videoRef.current.pause) {
         videoRef.current.pause();
-      } else if (videoRef.current && videoRef.current.videoRef && videoRef.current.videoRef.current) {
+      } else if (
+        videoRef.current &&
+        videoRef.current.videoRef &&
+        videoRef.current.videoRef.current
+      ) {
         // If using a forwarded ref to the TrainingVideo component
         videoRef.current.videoRef.current.pause();
       }
@@ -240,20 +337,23 @@ export default function AITrainingSessionPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/mcqs/submit-assignment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: userName, // Send user's name from session
-          email: userEmail,
-          answers: questions.map((q, index) => ({
-            question: q.question,
-            answer: selectedAnswers[index] || "",
-          })),
-        }),
-      });
+      const response = await fetch(
+        "http://192.168.0.207:5000/api/mcqs/submit-assignment",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: userName, // Send user's name from session
+            email: userEmail,
+            answers: questions.map((q, index) => ({
+              question: q.question,
+              answer: selectedAnswers[index] || "",
+            })),
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -266,9 +366,15 @@ export default function AITrainingSessionPage() {
       // If score is perfect (10/10), show success animation
       if (result.score === result.total) {
         const newCompletedVideos = new Set(completedVideos);
-        newCompletedVideos.add(0); // Mark first video as completed
+        // newCompletedVideos.add(0); // Mark first video as completed
+        newCompletedVideos.add(currentVideoIndex); // ✅ dynamic
         setCompletedVideos(newCompletedVideos);
         setShowSuccess(true);
+        saveProgressToServer({
+          completedVideos: Array.from(newCompletedVideos),
+          watchedVideos: Array.from(watchedVideos),
+          certificateIssued: newCompletedVideos.size === videoLessons.length,
+        });
       }
     } catch (error) {
       console.error("Error submitting answers:", error);
@@ -374,14 +480,14 @@ export default function AITrainingSessionPage() {
                       if (isUnlocked) {
                         toast({
                           title: `🎬 ${video.title}`,
-                          description: `Loading video: ${video.description}`
+                          description: `Loading video: ${video.description}`,
                         });
                         handleVideoSelect(index);
                       } else {
                         toast({
                           title: "🔒 Video Locked",
                           description: `"${video.title}" is locked. Please complete the previous video first.`,
-                          variant: "destructive"
+                          variant: "destructive",
                         });
                       }
                     }}
@@ -421,7 +527,7 @@ export default function AITrainingSessionPage() {
                             </div>
                           ) : (
                             <div className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 text-2xl font-bold rounded-full px-3 py-1 shadow">
-  🔒
+                              🔒
                             </div>
                           )}
                         </div>

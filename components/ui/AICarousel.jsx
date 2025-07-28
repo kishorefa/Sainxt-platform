@@ -1,39 +1,58 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import useEmblaCarousel from "embla-carousel-react"
-import { ArrowLeft, ArrowRight } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import * as React from "react";
+import useEmblaCarousel from "embla-carousel-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import Image from "next/image";
+import axios from "axios";
 
-export function AICarousel({ items, className }) {
+export function AICarousel({ className }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
     align: "start",
     skipSnaps: false,
     inViewThreshold: 0.7,
-  })
+  });
+
+  const [items, setItems] = React.useState([]);
+
+  // Fetch articles from backend
+  React.useEffect(() => {
+    axios
+      .get("http://192.168.0.207:5000/get-all-articles/")
+      .then((res) => {
+        const rawArticles = res.data.articles || [];
+        const normalized = rawArticles.map((a) => ({
+          title: a.title || "No title",
+          description: a.description || "No description",
+          imageUrl: a.image || null,
+          content_type: a.content_type || "image/png",
+          filename: a.filename || "default.jpg",
+          tags: Array.isArray(a.tags) ? a.tags : [],
+        }));
+        setItems(normalized);
+      })
+      .catch((err) => {
+        console.error("Error fetching articles:", err);
+      });
+  }, []);
+
+  // Auto-advance
+  React.useEffect(() => {
+    if (!emblaApi) return;
+    const interval = setInterval(() => emblaApi.scrollNext(), 5000);
+    return () => clearInterval(interval);
+  }, [emblaApi]);
 
   const scrollPrev = React.useCallback(() => {
-    if (emblaApi) emblaApi.scrollPrev()
-  }, [emblaApi])
+    if (emblaApi) emblaApi.scrollPrev();
+  }, [emblaApi]);
 
   const scrollNext = React.useCallback(() => {
-    if (emblaApi) emblaApi.scrollNext()
-  }, [emblaApi])
-
-  // Auto-advance the carousel
-  React.useEffect(() => {
-    if (!emblaApi) return
-
-    const interval = setInterval(() => {
-      if (emblaApi) {
-        emblaApi.scrollNext()
-      }
-    }, 5000) // Change slide every 5 seconds
-
-    return () => clearInterval(interval)
-  }, [emblaApi])
+    if (emblaApi) emblaApi.scrollNext();
+  }, [emblaApi]);
 
   return (
     <div className={cn("relative w-full overflow-hidden", className)}>
@@ -41,20 +60,27 @@ export function AICarousel({ items, className }) {
         <div className="flex">
           {items.map((item, index) => (
             <div key={index} className="flex-[0_0_100%] min-w-0 relative">
-              <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-muted">
+              <div className="relative aspect-video w-full overflow-hidden bg-muted">
                 {/* Background Image */}
-                <img
-                  src={item.imageUrl}
-                  alt={item.title}
-                  className="h-full w-full object-cover"
-                />
+                {item.imageUrl && (
+                  <Image
+                    src={item.imageUrl}
+                    alt={item.title}
+                    fill
+                    unoptimized
+                    className="object-cover"
+                  />
+                )}
+
                 {/* Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                
+
                 {/* Content */}
                 <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                   <h3 className="text-2xl font-bold mb-2">{item.title}</h3>
-                  <p className="text-muted-foreground line-clamp-2">{item.description}</p>
+                  <p className="text-muted-foreground line-clamp-2">
+                    {item.description}
+                  </p>
                 </div>
               </div>
             </div>
@@ -94,5 +120,5 @@ export function AICarousel({ items, className }) {
         ))}
       </div>
     </div>
-  )
+  );
 }

@@ -154,12 +154,13 @@ export default function LoginPage() {
           userType: payload.userType,
           name: payload.name || data.first_name || payload.email.split("@")[0],
           first_name: data.first_name || payload.name?.split(" ")[0] || payload.email.split("@")[0],
-          ...data.user
+          // Include any other user data from the login response
+          ...data.user,
         };
-        
+
         // Store the complete user data in localStorage
         localStorage.setItem("jobraze-user", JSON.stringify(userData));
-        
+
         // Force refresh the auth context
         if (window.refreshUser) {
           window.refreshUser();

@@ -142,6 +142,7 @@ export default function IndividualDashboard() {
   const auth = useAuth();
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [trainingProgress, setTrainingProgress] = useState(null);
 
   // Handle unauthorized events (e.g., when token refresh fails)
   useEffect(() => {
@@ -222,9 +223,30 @@ export default function IndividualDashboard() {
         setIsLoading(false);
       }
     };
-
+    const fetchTrainingProgress = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          "http://localhost:5000/api/user/training-progress/get",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+ 
+        const data = await res.json();
+        console.log("Training Progress:", data);
+        setTrainingProgress(data);
+      } catch (err) {
+        console.error("Failed to fetch training progress", err);
+      }
+    };
+ 
+    fetchTrainingProgress();
     fetchUserProfile();
-  }, [auth]);
+  }, []);
+
 
   // Check for auth and token only on client side
   const [isClient, setIsClient] = useState(false);
@@ -608,7 +630,49 @@ export default function IndividualDashboard() {
                         <Download className="h-4 w-4" />
                       </Button>
                     </div>
-                  </div>
+                
+                  {/* 🧠 Dynamic Certificate: AI101 Introductory Training */}
+                  <div className="flex items-center justify-between p-3 border border-soft-gray rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                            trainingProgress?.certificateIssued
+                              ? "bg-electric-orange/10"
+                              : "bg-gray-100"
+                          }`}
+                        >
+                          <Award
+                            className={`h-5 w-5 ${
+                              trainingProgress?.certificateIssued
+                                ? "text-electric-orange"
+                                : "text-gray-500"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <p className="font-medium text-deep-navy">
+                            AI101 Introductory Training
+                          </p>
+                          <p className="text-sm text-text-gray">
+                            {trainingProgress?.certificateIssued
+                              ? "Completed"
+                              : "In Progress"}
+                          </p>
+                        </div>
+                      </div>
+                      {trainingProgress?.certificateIssued && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            router.push("/individual/certificates")
+                          }
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    </div>
                   <Button
                     variant="outline"
                     className="w-full border-soft-gray text-deep-navy hover:bg-surface-secondary"

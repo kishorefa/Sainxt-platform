@@ -22,7 +22,7 @@ export default function UsersPage() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/admin/users');
+        const response = await fetch('http://192.168.0.207:5000/api/admin/users');
         if (!response.ok) {
           throw new Error('Failed to fetch users');
         }
