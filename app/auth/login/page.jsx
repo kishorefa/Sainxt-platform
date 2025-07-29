@@ -68,6 +68,33 @@ export default function LoginPage() {
     password: "",
     general: "",
   });
+  React.useEffect(() => {
+    const handlePageshow = (event) => {
+      // If the page was restored from the bfcache
+      if (event.persisted) {
+        const token = localStorage.getItem("token");
+        const user = localStorage.getItem("jobraze-user");
+ 
+        // If user is NOT authenticated, force a reload
+        if (!token || !user) {
+          window.location.reload();
+        }
+      }
+    };
+ 
+    window.addEventListener("pageshow", handlePageshow);
+ 
+    return () => {
+      window.removeEventListener("pageshow", handlePageshow);
+    };
+  }, []);
+ 
+  React.useEffect(() => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("jobraze-user");
+    localStorage.removeItem("token_expiry");
+    localStorage.removeItem("refresh_token");
+  }, []);
 
   const validateForm = () => {
     const newErrors = { email: "", password: "", general: "" };

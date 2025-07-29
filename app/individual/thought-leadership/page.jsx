@@ -49,88 +49,12 @@ const sidebarItems = [
   { title: "View Jobs", href: "/individual/jobs", icon: BookOpen },
 ];
 
-// const articles = [
-//   {
-//     id: "article1",
-//     title: "The Future of AI in Healthcare",
-//     excerpt:
-//       "Exploring how artificial intelligence is revolutionizing healthcare delivery and patient outcomes.",
-//     category: "AI in Healthcare",
-//     readTime: "8 min read",
-//     date: "May 15, 2024",
-//     image:
-//       "https://images.unsplash.com/photo-1576091160550-2173dba999ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-//     tags: ["AI", "Healthcare", "Innovation"],
-//     featured: true,
-//   },
-//   {
-//     id: 1,
-//     title: "Machine Learning Model Interpretability",
-//     excerpt:
-//       "Understanding and explaining complex machine learning models for better decision making.",
-//     category: "Machine Learning",
-//     readTime: "6 min read",
-//     date: "June 2, 2024",
-//     image:
-//       "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80://images.unsplash.com/photo-1563986768494-4dee2763ff33?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-//     tags: ["Machine Learning", "Interpretability", "AI Ethics"],
-//   },
-//   {
-//     id: 2,
-//     title: "Ethical AI: Challenges and Solutions",
-//     excerpt:
-//       "Addressing the ethical implications of AI and strategies for responsible development.",
-//     category: "AI Ethics",
-//     readTime: "7 min read",
-//     date: "June 10, 2024",
-//     image:
-//       "https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-//     tags: ["Ethics", "Responsible AI", "Governance"],
-//   },
-//   {
-//     id: 3,
-//     title: "Deep Learning for Natural Language Processing",
-//     excerpt:
-//       "Advancements in NLP and how deep learning is transforming language understanding.",
-//     category: "NLP",
-//     readTime: "9 min read",
-//     date: "June 18, 2024",
-//     image:
-//       "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-//     tags: ["NLP", "Deep Learning", "AI"],
-//   },
-//   {
-//     id: 4,
-//     title: "Computer Vision in Autonomous Vehicles",
-//     excerpt:
-//       "How computer vision is enabling the next generation of self-driving cars.",
-//     category: "Computer Vision",
-//     readTime: "5 min read",
-//     date: "June 25, 2024",
-//     image:
-//       "https://images.unsplash.com/photo-1526378722484-bd91ca387e75?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-//     tags: ["Computer Vision", "Autonomous Vehicles", "AI"],
-//   },
-//   {
-//     id: 5,
-//     title: "Reinforcement Learning: Beyond Games",
-//     excerpt:
-//       "Practical applications of reinforcement learning in real-world scenarios.",
-//     category: "Reinforcement Learning",
-//     readTime: "7 min read",
-//     date: "July 1, 2024",
-//     image:
-//       "https://images.unsplash.com/photo-1593508512255-86ab42a8e620?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80", // Reinforcement learning - robot learning
-//     tags: ["Reinforcement Learning", "AI Applications", "Machine Learning"],
-//   },
-// ];
-
 const ThoughtLeadershipPage = () => {
   const router = useRouter();
   const { user, setUser } = useAuth();
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState("All Articles");
   const [articles, setArticles] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isVisible, setIsVisible] = useState(false);
@@ -154,7 +78,7 @@ const ThoughtLeadershipPage = () => {
           return;
         }
 
-        const response = await fetch("http://192.168.0.207:5000/api/user/profile", {
+        const response = await fetch("http://localhost:5000/api/user/profile", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -203,7 +127,7 @@ const ThoughtLeadershipPage = () => {
 
   useEffect(() => {
     axios
-      .get("http://192.168.0.207:5000/get-all-articles/")
+      .get("http://localhost:5000/get-all-articles/")
       .then((res) => {
         const rawArticles = res.data.articles || [];
 
@@ -238,17 +162,40 @@ const ThoughtLeadershipPage = () => {
         tag.toLowerCase().includes(searchQuery.toLowerCase())
       );
 
-    if (activeTab === "all") return matchesSearch;
+    if (activeTab.toLowerCase() === "all articles") return matchesSearch;
+
+    // ✅ Safely check article.category existence
     return (
       matchesSearch &&
-      article.category.toLowerCase() === activeTab.toLowerCase()
+      article.category?.toLowerCase() === activeTab.toLowerCase()
     );
   });
 
-  const categories = [...new Set(articles.map((article) => article.category))];
+  const defaultCategories = [
+    "All Articles",
+    "Artificial Intelligence",
+    "Machine Learning",
+    "NLP",
+    "Computer Vision",
+    "Deep Learnoing",
+    // "Cloud Computing",
+    // "Cybersecurity",
+    // "Data Science",
+    // "Web Development",
+  ];
+
+  const dynamicCategories = [
+    ...new Set(articles.map((article) => article.category)),
+  ];
+
+  const categories = Array.from(
+    new Set([...defaultCategories, ...dynamicCategories])
+  );
+
+  // const categories = [...new Set(articles.map((article) => article.category))];
   useEffect(() => {
     axios
-      .get("http://192.168.0.207:5000/get-all-articles/") // adjust if using different port
+      .get("http://localhost:5000/get-all-articles/") // adjust if using different port
       .then((res) => {
         setArticles(res.data.articles);
       })
@@ -327,12 +274,6 @@ const ThoughtLeadershipPage = () => {
             className="w-full"
           >
             <TabsList className="bg-transparent p-0 h-auto w-full justify-start border-b border-gray-200 dark:border-gray-800 rounded-none">
-              <TabsTrigger
-                value="all"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-neon-coral rounded-none px-4 py-3 font-medium text-gray-500 dark:text-gray-400 data-[state=active]:text-deep-navy dark:data-[state=active]:text-white"
-              >
-                All Articles
-              </TabsTrigger>
               {categories.map((category, index) => (
                 <TabsTrigger
                   key={index}
@@ -396,7 +337,9 @@ const ThoughtLeadershipPage = () => {
 
         {/* All Articles Grid */}
         <div className="mt-8">
-          <h2 className="text-2xl font-bold text-deep-navy dark:text-white mb-6">All Articles</h2>
+          <h2 className="text-2xl font-bold text-deep-navy dark:text-white mb-6">
+            All Articles
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredArticles.map((article, index) => (
               <motion.div
@@ -408,38 +351,6 @@ const ThoughtLeadershipPage = () => {
                 className="group h-full flex flex-col"
               >
                 <Card className="h-full overflow-hidden border border-gray-200 dark:border-gray-800 hover:shadow-lg transition-shadow duration-300">
-                  {/* <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"> */}
-                  {/* {articles.length === 0 ? (
-                      <p>No articles found.</p>
-                    ) : (
-                      articles.map((article, index) => (
-                        <div
-                          key={index}
-                          className="bg-white shadow-md p-4 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow duration-200"
-                        >
-                          <h2 className="text-lg font-bold mb-2">
-                            {article.title}
-                          </h2>
-                          <p className="text-sm text-gray-600">
-                            {article.content?.slice(0, 100)}...
-                          </p>
-                          <div className="mt-2">
-                            <span
-                              className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
-                                article.status === "approved"
-                                  ? "bg-green-100 text-green-800"
-                                  : article.status === "rejected"
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-yellow-100 text-yellow-800"
-                              }`}
-                            >
-                              {article.status || "pending"}
-                            </span>
-                          </div>
-                        </div>
-                      ))
-                    )} */}
-                  {/* </div> */}
                   <div className="relative h-48 overflow-hidden">
                     <Image
                       src={article.imageUrl || article.image}
@@ -514,7 +425,7 @@ const ThoughtLeadershipPage = () => {
                       onClick={() => {
                         router.push(
                           `/individual/thought-leadership/${article.article_id}`
-                        )
+                        );
                       }}
                     >
                       Read more <ArrowRight className="ml-1 h-4 w-4" />
@@ -525,11 +436,6 @@ const ThoughtLeadershipPage = () => {
             ))}
           </div>
         </div>
-
-        {/* AI Articles Carousel with ArticleCards */}
-        {/* <div className="rounded-2xl overflow-hidden">
-          <ArticleCards articles={featuredArticles} />
-        </div> */}
 
         {filteredArticles.length === 0 && (
           <div className="text-center py-16">

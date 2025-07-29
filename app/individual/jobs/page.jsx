@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -75,31 +75,130 @@ export default function JobsPage() {
   const [error, setError] = useState(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [userProfile, setUserProfile] = useState(null);
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [showJobModal, setShowJobModal] = useState(false);
   const router = useRouter();
   const auth = useAuth();
 
   const isLoading = isJobsLoading || isProfileLoading;
 
-  // Fetch jobs from Arbeitnow API
+  // Load hardcoded professional job listings
   useEffect(() => {
-    const fetchJobs = async () => {
+    const loadJobs = () => {
       try {
         setIsJobsLoading(true);
-        const response = await fetch("/api/arbeitnow");
-        if (!response.ok) {
-          throw new Error("Failed to fetch jobs");
-        }
-        const data = await response.json();
-        setJobs(data);
+        const professionalJobs = [
+          {
+            id: '1',
+            title: 'Senior AI/ML Engineer',
+            company: 'TechNova AI Solutions',
+            location: 'San Francisco, CA (Remote)',
+            type: 'Full-time',
+            salary: '$150,000 - $200,000/year',
+            match: 92,
+            posted: '2 days ago',
+            description: 'We are looking for an experienced AI/ML Engineer to join our team. You will be responsible for developing and implementing machine learning models, designing algorithms, and working with large datasets to solve complex problems.',
+            requirements: [
+              '5+ years of experience in machine learning and artificial intelligence',
+              'Strong programming skills in Python and experience with ML frameworks like TensorFlow or PyTorch',
+              'Experience with natural language processing and computer vision',
+              'Knowledge of cloud platforms (AWS, GCP, or Azure)',
+              'Strong problem-solving and analytical skills'
+            ],
+            skills: ['Machine Learning', 'Python', 'TensorFlow', 'NLP', 'Computer Vision', 'AWS'],
+            aiFocus: ['Machine Learning', 'Deep Learning', 'NLP', 'Computer Vision']
+          },
+          {
+            id: '2',
+            title: 'Data Scientist - AI Research',
+            company: 'DataInsight Labs',
+            location: 'New York, NY (Hybrid)',
+            type: 'Full-time',
+            salary: '$130,000 - $180,000/year',
+            match: 87,
+            posted: '1 week ago',
+            description: 'Join our AI research team to develop cutting-edge machine learning models and algorithms. You will work on challenging problems in natural language understanding and predictive analytics.',
+            requirements: [
+              'PhD or Master\'s degree in Computer Science, Statistics, or related field',
+              '3+ years of experience in data science and machine learning',
+              'Strong background in statistics and experimental design',
+              'Experience with big data technologies (Spark, Hadoop, etc.)',
+              'Excellent communication and collaboration skills'
+            ],
+            skills: ['Data Science', 'Python', 'R', 'Spark', 'Machine Learning', 'Statistics'],
+            aiFocus: ['Data Science', 'Machine Learning', 'NLP', 'Big Data']
+          },
+          {
+            id: '3',
+            title: 'AI Product Manager',
+            company: 'FutureTech Innovations',
+            location: 'Seattle, WA (Remote)',
+            type: 'Full-time',
+            salary: '$140,000 - $190,000/year',
+            match: 84,
+            posted: '3 days ago',
+            description: 'We are seeking an AI Product Manager to lead the development of our AI-powered products. You will work closely with engineering, design, and business teams to define product vision and roadmap.',
+            requirements: [
+              '5+ years of product management experience, preferably in AI/ML products',
+              'Strong technical background with understanding of AI/ML concepts',
+              'Experience with agile development methodologies',
+              'Excellent communication and leadership skills',
+              'Proven track record of delivering successful products'
+            ],
+            skills: ['Product Management', 'AI/ML', 'Agile', 'Product Strategy', 'User Research'],
+            aiFocus: ['AI Product Management', 'Machine Learning', 'Product Strategy']
+          },
+          {
+            id: '4',
+            title: 'Computer Vision Engineer',
+            company: 'Visionary AI',
+            location: 'Boston, MA (On-site)',
+            type: 'Full-time',
+            salary: '$145,000 - $195,000/year',
+            match: 89,
+            posted: '5 days ago',
+            description: 'Join our team to develop state-of-the-art computer vision algorithms for real-world applications. You will work on challenging problems in image recognition, object detection, and video analysis.',
+            requirements: [
+              '3+ years of experience in computer vision and deep learning',
+              'Strong programming skills in Python and C++',
+              'Experience with OpenCV, TensorFlow, or PyTorch',
+              'Knowledge of 3D computer vision and SLAM is a plus',
+              'Strong mathematical background in linear algebra and optimization'
+            ],
+            skills: ['Computer Vision', 'Python', 'C++', 'OpenCV', 'Deep Learning', 'TensorFlow'],
+            aiFocus: ['Computer Vision', 'Deep Learning', 'Image Processing']
+          },
+          {
+            id: '5',
+            title: 'NLP Research Scientist',
+            company: 'LinguaTech AI',
+            location: 'Remote (Global)',
+            type: 'Contract',
+            salary: '$100 - $150/hour',
+            match: 91,
+            posted: '1 day ago',
+            description: 'We are looking for an NLP Research Scientist to join our team and help push the boundaries of natural language understanding and generation. You will work on cutting-edge research and develop novel algorithms.',
+            requirements: [
+              'PhD in Computer Science, Linguistics, or related field',
+              'Strong publication record in top-tier NLP/ML conferences',
+              'Experience with transformer models and large language models',
+              'Proficiency in Python and deep learning frameworks',
+              'Experience with distributed training is a plus'
+            ],
+            skills: ['NLP', 'Machine Learning', 'Python', 'Transformers', 'Deep Learning', 'Research'],
+            aiFocus: ['NLP', 'Machine Learning', 'Deep Learning', 'Research']
+          }
+        ];
+        setJobs(professionalJobs);
       } catch (err) {
-        console.error("Error fetching jobs:", err);
+        console.error("Error loading jobs:", err);
         setError("Failed to load jobs. Please try again later.");
       } finally {
         setIsJobsLoading(false);
       }
     };
 
-    fetchJobs();
+    loadJobs();
   }, []);
 
   // Fetch user profile
@@ -481,7 +580,16 @@ export default function JobsPage() {
                   </div>
 
                   {filteredJobs.map((job) => (
-                    <JobCard key={job.id} job={job} />
+                    <div 
+                      key={job.id}
+                      onClick={() => {
+                        setSelectedJob(job);
+                        setShowJobModal(true);
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <JobCard job={job} />
+                    </div>
                   ))}
                 </>
               ) : (
@@ -525,6 +633,123 @@ export default function JobsPage() {
           </div>
         </div>
       </div>
+
+      {/* Job Description Modal */}
+      {showJobModal && selectedJob && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowJobModal(false)}>
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-soft-gray/50 p-6 flex justify-between items-start">
+              <div>
+                <h2 className="text-2xl font-bold text-deep-navy">{selectedJob.title}</h2>
+                <p className="text-lg text-deep-navy/80">{selectedJob.company}</p>
+                <div className="flex items-center mt-2">
+                  <MapPin className="w-4 h-4 text-deep-navy/60 mr-1" />
+                  <span className="text-sm text-deep-navy/70">{selectedJob.location}</span>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center px-3 py-1 bg-gradient-to-r from-neon-coral/10 to-aqua-blue/10 rounded-full border border-neon-coral/20">
+                  <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-neon-coral to-aqua-blue mr-2"></div>
+                  <span className="text-sm font-medium text-deep-navy">
+                    {selectedJob.match}% Match
+                  </span>
+                </div>
+                <button 
+                  onClick={() => setShowJobModal(false)}
+                  className="text-gray-400 hover:text-neon-coral transition-colors p-1 -mr-2"
+                  aria-label="Close"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-2 space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-deep-navy mb-3">Job Description</h3>
+                    <p className="text-deep-navy/80 leading-relaxed">{selectedJob.description}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-lg font-semibold text-deep-navy mb-3">Requirements</h3>
+                    <ul className="space-y-2">
+                      {selectedJob.requirements.map((req, idx) => (
+                        <li key={idx} className="flex items-start">
+                          <div className="flex-shrink-0 h-5 w-5 text-neon-coral mt-0.5">
+                            <svg viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <span className="ml-2 text-deep-navy/80">{req}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+                
+                <div className="space-y-6">
+                  <div className="bg-gradient-to-br from-neon-coral/5 to-aqua-blue/5 p-5 rounded-xl border border-soft-gray/50">
+                    <h3 className="font-semibold text-deep-navy mb-3">Job Details</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center">
+                        <Briefcase className="w-5 h-5 text-deep-navy/60 mr-2" />
+                        <div>
+                          <p className="text-sm text-deep-navy/60">Job Type</p>
+                          <p className="font-medium">{selectedJob.type}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        <DollarSign className="w-5 h-5 text-deep-navy/60 mr-2" />
+                        <div>
+                          <p className="text-sm text-deep-navy/60">Salary</p>
+                          <p className="font-medium">{selectedJob.salary}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="w-5 h-5 text-deep-navy/60 mr-2" />
+                        <div>
+                          <p className="text-sm text-deep-navy/60">Posted</p>
+                          <p className="font-medium">{selectedJob.posted}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-6">
+                      <h4 className="text-sm font-medium text-deep-navy/80 mb-2">Required Skills</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedJob.skills.map((skill, idx) => (
+                          <span key={idx} className="px-3 py-1 text-sm rounded-full bg-white border border-soft-gray/50 text-deep-navy/80">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <Button 
+                      className="w-full mt-6 bg-gradient-to-r from-neon-coral to-aqua-blue hover:from-neon-coral/90 hover:to-aqua-blue/90 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+                      size="lg"
+                    >
+                      Apply Now
+                    </Button>
+                  </div>
+                  
+                  <div className="bg-white p-5 rounded-xl border border-soft-gray/50">
+                    <h3 className="font-semibold text-deep-navy mb-3">About {selectedJob.company}</h3>
+                    <p className="text-sm text-deep-navy/80 mb-4">
+                      {selectedJob.company} is a leading company in the AI/ML space, dedicated to pushing the boundaries of artificial intelligence and delivering innovative solutions to complex problems.
+                    </p>
+                    <Button variant="outline" className="w-full border-neon-coral/30 text-neon-coral hover:bg-neon-coral/5">
+                      View Company Profile
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

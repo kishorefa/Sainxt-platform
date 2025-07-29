@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useParams } from "next/navigation";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "react-toastify";
 import dynamic from "next/dynamic";
 import 'quill/dist/quill.snow.css';
 import {
@@ -20,6 +20,7 @@ import {
   Settings,
   Shield,
   FileText,
+  CheckCircle,
 } from "lucide-react";
 
 const TiptapEditor = dynamic(() => import("@/components/TiptapEditor"), {
@@ -31,7 +32,7 @@ export default function EditArticlePage() {
   const params = useParams();
   const id = params.id;
   const router = useRouter();
-  const { toast } = useToast();
+  // toast is already imported from react-toastify;
   const [article, setArticle] = useState(null);
   const [editorContent, setEditorContent] = useState("");
   const [loading, setLoading] = useState(true);
@@ -72,19 +73,35 @@ export default function EditArticlePage() {
     try {
       setLoading(true);
       setError(null);
-      // const response = await fetch(`/api/article/${params.id}`);
-      const response = await fetch(`http://192.168.0.207:5000/article/${id}`);
-      if (!response.ok) throw new Error("Article not found");
+      const response = await fetch(`http://192.168.0.207:5000/api/article/${id}`);
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error("Article not found. The article may have been deleted or the ID might be incorrect.");
+        } else {
+          throw new Error(`Failed to fetch article: ${response.status} ${response.statusText}`);
+        }
+      }
       const data = await response.json();
-      // setArticle(data.article);
-      setArticle(data);
+      console.log("Fetched article data:", data);
+      setArticle({
+        ...data,
+        article_id: data.article_id || id, // Ensure article_id is set
+        title: data.title || "",
+        content: data.content || "",
+        status: data.status || "draft",
+        metadata: data.metadata || {}
+      });
       setEditorContent(data.content || "");
     } catch (error) {
       setError(error.message);
-      toast({
-        title: "Error",
-        description: "Failed to fetch article",
-        variant: "destructive",
+      toast.error("Failed to fetch article", {
+        position: "top-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
       });
     } finally {
       setLoading(false);
@@ -94,7 +111,7 @@ export default function EditArticlePage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!article || !article.title || !article.content) {
+    if (!article || !article.title || !editorContent) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -106,37 +123,56 @@ export default function EditArticlePage() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`/api/article/${params.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title: article.title,
-          // content: article.content,
-          content: editorContent,
-          status: article.status,
-          metadata: {
-            ...article.metadata,
-            updatedAt: new Date().toISOString(),
+      const response = await fetch(
+        `http://192.168.0.207:5000/api/article/update-content/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
           },
-        }),
+          body: JSON.stringify({
+            title: article.title,
+            content: editorContent,
+            status: article.status || "draft",
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Update error:", errorData);
+        throw new Error(
+          errorData.detail || `Failed to update article: ${response.statusText}`
+        );
+      }
+
+      const result = await response.json();
+      console.log("Update successful:", result);
+
+      toast.success(`Article "${article.title}" has been updated successfully`, {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
       });
 
-      if (!response.ok) throw new Error("Failed to update article");
-
-      toast({
-        title: "Success",
-        description: "Article updated successfully",
-      });
-
-      // Redirect to articles list
-      router.push("/admin/articles");
+      // Redirect to articles list after a short delay
+      setTimeout(() => {
+        router.push("/admin/articles");
+      }, 1000);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update article",
-        variant: "destructive",
+      console.error("Error updating article:", error);
+      toast.error(error.message || "Failed to update article. Please try again.", {
+        position: "top-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
       });
     } finally {
       setIsSubmitting(false);

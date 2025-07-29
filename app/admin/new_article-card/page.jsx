@@ -35,6 +35,7 @@ export default function NewArticleCardPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState(null);
+  const [category, setCategory] = useState("");
   const [userProfile, setUserProfile] = useState(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   useEffect(() => {
@@ -56,12 +57,7 @@ export default function NewArticleCardPage() {
     { title: "System Settings", href: "/admin/settings", icon: Settings },
     { title: "Security", href: "/admin/security", icon: Shield },
     { title: "Articles", href: "/admin/articles", icon: FileText },
-    {
-      title: "Article Cards",
-      href: "/admin/article-cards",
-      icon: FileText,
-      // active: true,
-    },
+    { title: "Article Cards", href: "/admin/new_article-card", icon: FileText },
   ];
 
   const fetchUserProfile = async () => {
@@ -84,7 +80,7 @@ export default function NewArticleCardPage() {
         token.substring(0, 10) + "..."
       );
 
-      const response = await fetch("http://192.168.0.207:5000/api/user/profile", {
+      const response = await fetch("http://localhost:5000/api/user/profile", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -131,10 +127,11 @@ export default function NewArticleCardPage() {
     formData.append("title", title);
     formData.append("description", description);
     formData.append("image", image);
+    formData.append("category", category);
 
     try {
       const res = await fetch(
-        "http://192.168.0.207:5000/api/article/article_card",
+        "http://localhost:5000/api/article/article_card",
         {
           method: "POST",
           body: formData,
@@ -242,6 +239,18 @@ export default function NewArticleCardPage() {
     );
   }
 
+  const availableCategories = [
+    "Artificial Intelligence",
+    "Machine Learning",
+    "NLP",
+    "Computer Vision",
+    "Deep Learnoing",
+    // "Cloud Computing",
+    // "Cybersecurity",
+    // "Data Science",
+    // "Web Development",
+  ];
+
   return (
     <DashboardLayout
       sidebar={<SidebarNav items={sidebarItems} />}
@@ -257,6 +266,19 @@ export default function NewArticleCardPage() {
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4 mb-8">
+          <select
+            className="w-full border p-2 rounded text-gray-700"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <option value="">Select Category</option>
+            {availableCategories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+
           <Input
             placeholder="Title"
             value={title}
@@ -299,6 +321,9 @@ export default function NewArticleCardPage() {
               />
             )}
             <CardHeader>
+              <CardDescription className="mt-2 text-sm text-gray-600 italic">
+                Category: {category || "Not selected"}
+              </CardDescription>
               <CardTitle>{title || "Card Title"}</CardTitle>
               <CardDescription>
                 {description || "Card description will appear here."}

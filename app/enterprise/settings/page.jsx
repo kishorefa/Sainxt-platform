@@ -128,7 +128,7 @@ export default function EnterpriseSettings() {
     };
 
     fetchUserProfile();
-  }, [auth]);
+  }, []);
 
   if (!auth) {
     return (

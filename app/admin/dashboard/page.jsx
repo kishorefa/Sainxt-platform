@@ -170,6 +170,18 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("jobraze-user");
+ 
+      // If not authenticated, redirect to login
+      if (!token || !user) {
+        router.replace("/auth/login");
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     const fetchUserProfile = async () => {
       try {
         // Only run on client side
@@ -180,7 +192,7 @@ export default function AdminDashboard() {
 
         const token = localStorage.getItem("token");
         if (!token) {
-          console.error("No authentication token found");
+          console.warn("No authentication token found");
           setIsLoading(false);
           return;
         }
@@ -220,6 +232,57 @@ export default function AdminDashboard() {
 
     fetchUserProfile();
   }, []);
+
+  const [isClient, setIsClient] = useState(false);
+ 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+ 
+  if (!isClient) {
+    // Show loading state during server-side rendering
+ 
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-coral"></div>
+      </div>
+    );
+  }
+ 
+  if (!auth || !localStorage.getItem("token")) {
+    // Show loading state while redirecting
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-coral"></div>
+        <p className="text-center text-lg text-gray-600">
+          Redirecting to login...
+        </p>
+      </div>
+    );
+  }
+ 
+  const { user, loading } = auth;
+ 
+  // Debug: Log the user object to see what data we have
+  console.log("User object in dashboard:", JSON.stringify(user, null, 2));
+ 
+  // Check localStorage directly as well
+  let storedUser = null;
+  if (typeof window !== "undefined") {
+    storedUser = localStorage.getItem("jobraze-user");
+    console.log("Stored user in localStorage (raw):", storedUser);
+    try {
+      const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+      console.log("Parsed user from localStorage:", parsedUser);
+      console.log(
+        "Available keys in user object:",
+        Object.keys(parsedUser || {})
+      );
+    } catch (e) {
+      console.error("Error parsing stored user:", e);
+    }
+  }
+ 
 
   // Get display name with priority: userProfile > auth.user > localStorage
   const getDisplayName = () => {

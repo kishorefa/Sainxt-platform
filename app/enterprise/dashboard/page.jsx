@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/custom_auth-provider";
 import {
   Card,
@@ -39,6 +40,7 @@ import {
   MoreHorizontal,
   UserCheckIcon,
 } from "lucide-react";
+
 
 const sidebarItems = [
   { title: "Dashboard", href: "/enterprise/dashboard", icon: TrendingUp },
@@ -188,9 +190,22 @@ const getPriorityBadge = (priority) => {
 };
 
 export default function EnterpriseDashboard() {
+  const router = useRouter();
   const auth = useAuth();
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("jobraze-user");
+ 
+      // If not authenticated, redirect to login
+      if (!token || !user) {
+        router.replace("/auth/login");
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -203,7 +218,7 @@ export default function EnterpriseDashboard() {
 
         const token = localStorage.getItem("token");
         if (!token) {
-          console.error("No authentication token found");
+          console.warn("No authentication token found");
           setIsLoading(false);
           return;
         }
@@ -252,6 +267,34 @@ export default function EnterpriseDashboard() {
 
     fetchUserProfile();
   }, []);
+
+  const [isClient, setIsClient] = useState(false);
+ 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+ 
+  if (!isClient) {
+    // Show loading state during server-side rendering
+ 
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-coral"></div>
+      </div>
+    );
+  }
+ 
+  if (!auth || !localStorage.getItem("token")) {
+    // Show loading state while redirecting
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-coral"></div>
+        <p className="text-center text-lg text-gray-600">
+          Redirecting to login...
+        </p>
+      </div>
+    );
+  }
 
   if (!auth) {
     return (
