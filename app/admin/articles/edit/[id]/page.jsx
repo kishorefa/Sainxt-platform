@@ -66,6 +66,18 @@ export default function EditArticlePage() {
   ];
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("jobraze-user");
+ 
+      // If not authenticated, redirect to login
+      if (!token || !user) {
+        router.replace("/auth/login");
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     fetchArticle();
   }, []);
 

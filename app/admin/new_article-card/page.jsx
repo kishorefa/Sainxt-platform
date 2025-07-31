@@ -32,17 +32,30 @@ import {
 
 export default function NewArticleCardPage() {
   const auth = useAuth();
+  const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState(null);
   const [category, setCategory] = useState("");
   const [userProfile, setUserProfile] = useState(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("jobraze-user");
+ 
+      // If not authenticated, redirect to login
+      if (!token || !user) {
+        router.replace("/auth/login");
+      }
+    }
+  }, []);
   useEffect(() => {
     fetchUserProfile();
   }, []);
 
-  const router = useRouter();
+
 
   const sidebarItems = [
     { title: "Dashboard", href: "/admin/dashboard", icon: TrendingUp },
@@ -70,7 +83,7 @@ export default function NewArticleCardPage() {
 
       const token = localStorage.getItem("token");
       if (!token) {
-        console.error("No authentication token found");
+        console.warn("No authentication token found");
         setIsLoadingProfile(false);
         return;
       }
@@ -192,14 +205,7 @@ export default function NewArticleCardPage() {
   const userEmail =
     userProfile?.email || auth.user?.email || "admin@sainxt.com";
 
-  // Check authentication
-  if (!auth) {
-    return (
-      <p className="text-center mt-10 text-lg">
-        You must be signed in to access the admin articles page.
-      </p>
-    );
-  }
+
 
   const { user, loading: authLoading } = auth;
 
@@ -231,20 +237,14 @@ export default function NewArticleCardPage() {
     );
   }
 
-  if (!user) {
-    return (
-      <p className="text-center mt-10 text-lg">
-        You must be signed in to access the admin articles page.
-      </p>
-    );
-  }
+  
 
   const availableCategories = [
     "Artificial Intelligence",
     "Machine Learning",
     "NLP",
     "Computer Vision",
-    "Deep Learnoing",
+    "Deep Learning",
     // "Cloud Computing",
     // "Cybersecurity",
     // "Data Science",

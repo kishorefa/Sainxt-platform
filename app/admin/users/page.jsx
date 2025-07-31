@@ -68,6 +68,17 @@ export default function UsersPage() {
     individual: [],
     enterprise: [],
   });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("jobraze-user");
+ 
+      // If not authenticated, redirect to login
+      if (!token || !user) {
+        router.replace("/auth/login");
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -180,13 +191,7 @@ export default function UsersPage() {
     );
   }
 
-  if (!auth.user) {
-    return (
-      <p className="text-center mt-10 text-lg">
-        You must be signed in to access the Admin Dashboard.
-      </p>
-    );
-  }
+
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { useAuth } from "@/components/providers/custom_auth-provider";
+import { useRouter } from "next/navigation";
 import {
   TrendingUp,
   Briefcase,
@@ -31,6 +32,7 @@ const sidebarItems = [
 
 export default function JDInterviewPage() {
   const auth = useAuth();
+  const router = useRouter();  
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [iframeKey, setIframeKey] = useState(0);
@@ -43,6 +45,19 @@ export default function JDInterviewPage() {
     ? "http://localhost:5173/dashboard"
     : "/interview";
 
+
+    useEffect(() => {
+      if (typeof window !== "undefined") {
+        const token = localStorage.getItem("token");
+        const user = localStorage.getItem("jobraze-user");
+   
+        // If not authenticated, redirect to login
+        if (!token || !user) {
+          router.replace("/auth/login");
+        }
+      }
+    }, []);
+
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -54,7 +69,7 @@ export default function JDInterviewPage() {
 
         const token = localStorage.getItem("token");
         if (!token) {
-          console.error("No authentication token found");
+          console.warn("No authentication token found");
           setIsLoading(false);
           return;
         }
@@ -103,13 +118,7 @@ export default function JDInterviewPage() {
     fetchUserProfile();
   }, []);
 
-  if (!auth) {
-    return (
-      <p className="text-center mt-10 text-lg">
-        You must be signed in to access the JD Interview page.
-      </p>
-    );
-  }
+ 
 
   const { user, loading } = auth;
 
@@ -181,13 +190,7 @@ export default function JDInterviewPage() {
     return <p className="text-center mt-10 text-lg">Loading...</p>;
   }
 
-  if (!user) {
-    return (
-      <p className="text-center mt-10 text-lg">
-        You must be signed in to access the JD Interview page.
-      </p>
-    );
-  }
+  
 
   const handleIframeLoad = () => {
     // Additional iframe loading logic can go here if needed

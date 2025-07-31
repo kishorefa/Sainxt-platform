@@ -60,6 +60,18 @@ const ThoughtLeadershipPage = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [featuredArticles, setFeaturedArticles] = useState([]);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("jobraze-user");
+ 
+      // If not authenticated, redirect to login
+      if (!token || !user) {
+        router.replace("/auth/login");
+      }
+    }
+  }, []);
+
   // Fetch user profile
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -72,7 +84,7 @@ const ThoughtLeadershipPage = () => {
 
         const token = localStorage.getItem("token");
         if (!token) {
-          console.error("No authentication token found");
+          console.warn("No authentication token found");
           setIsLoading(false);
           router.push("/auth/login");
           return;
@@ -156,10 +168,10 @@ const ThoughtLeadershipPage = () => {
 
   const filteredArticles = articles.filter((article) => {
     const matchesSearch =
-      article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      article.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      article.tags.some((tag) =>
-        tag.toLowerCase().includes(searchQuery.toLowerCase())
+      article.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (article.excerpt && article.excerpt.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      article.tags?.some((tag) =>
+        tag?.toLowerCase().includes(searchQuery.toLowerCase())
       );
 
     if (activeTab.toLowerCase() === "all articles") return matchesSearch;
@@ -177,7 +189,7 @@ const ThoughtLeadershipPage = () => {
     "Machine Learning",
     "NLP",
     "Computer Vision",
-    "Deep Learnoing",
+    "Deep Learning",
     // "Cloud Computing",
     // "Cybersecurity",
     // "Data Science",

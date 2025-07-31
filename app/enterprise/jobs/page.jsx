@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/custom_auth-provider";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
@@ -302,9 +303,22 @@ const columns = [
 
 export default function JobListingsPage() {
   const auth = useAuth();
+  const router = useRouter();  
   const [selectedJobs, setSelectedJobs] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("jobraze-user");
+ 
+      // If not authenticated, redirect to login
+      if (!token || !user) {
+        router.replace("/auth/login");
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -317,7 +331,7 @@ export default function JobListingsPage() {
 
         const token = localStorage.getItem("token");
         if (!token) {
-          console.error("No authentication token found");
+          console.warn("No authentication token found");
           setIsLoading(false);
           return;
         }
@@ -366,13 +380,7 @@ export default function JobListingsPage() {
     fetchUserProfile();
   }, []);
 
-  if (!auth) {
-    return (
-      <p className="text-center mt-10 text-lg">
-        You must be signed in to access the Job Listings page.
-      </p>
-    );
-  }
+ 
 
   const { user, loading } = auth;
 
@@ -444,13 +452,7 @@ export default function JobListingsPage() {
     return <p className="text-center mt-10 text-lg">Loading...</p>;
   }
 
-  if (!user) {
-    return (
-      <p className="text-center mt-10 text-lg">
-        You must be signed in to access the Job Listings page.
-      </p>
-    );
-  }
+ 
 
   return (
     <DashboardLayout

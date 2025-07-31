@@ -82,6 +82,19 @@ export default function JobsPage() {
 
   const isLoading = isJobsLoading || isProfileLoading;
 
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("jobraze-user");
+ 
+      // If not authenticated, redirect to login
+      if (!token || !user) {
+        router.replace("/auth/login");
+      }
+    }
+  }, []);
+
   // Load hardcoded professional job listings
   useEffect(() => {
     const loadJobs = () => {
@@ -212,7 +225,7 @@ export default function JobsPage() {
 
         const token = localStorage.getItem("token");
         if (!token) {
-          console.error("No authentication token found");
+          console.warn("No authentication token found");
           setIsProfileLoading(false);
           router.push("/auth/login");
           return;

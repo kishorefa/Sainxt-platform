@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { useAuth } from "@/components/providers/custom_auth-provider";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -49,6 +50,7 @@ const sidebarItems = [
 export default function EnterpriseSettings() {
   // State to hold various company settings
   const auth = useAuth();
+  const router = useRouter();  
   const [settings, setSettings] = useState({
     theme: "system",
     language: "english",
@@ -71,6 +73,18 @@ export default function EnterpriseSettings() {
   };
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("jobraze-user");
+ 
+      // If not authenticated, redirect to login
+      if (!token || !user) {
+        router.replace("/auth/login");
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     const fetchUserProfile = async () => {
       try {
         // Only run on client side
@@ -81,7 +95,7 @@ export default function EnterpriseSettings() {
 
         const token = localStorage.getItem("token");
         if (!token) {
-          console.error("No authentication token found");
+          console.warn("No authentication token found");
           setIsLoading(false);
           return;
         }
@@ -130,13 +144,7 @@ export default function EnterpriseSettings() {
     fetchUserProfile();
   }, []);
 
-  if (!auth) {
-    return (
-      <p className="text-center mt-10 text-lg">
-        You must be signed in to access the Job Listings page.
-      </p>
-    );
-  }
+ 
 
   const { user, loading } = auth;
 
@@ -208,13 +216,7 @@ export default function EnterpriseSettings() {
     return <p className="text-center mt-10 text-lg">Loading...</p>;
   }
 
-  if (!user) {
-    return (
-      <p className="text-center mt-10 text-lg">
-        You must be signed in to access the Job Listings page.
-      </p>
-    );
-  }
+
 
   return (
     <DashboardLayout

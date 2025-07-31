@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import dynamic from "next/dynamic"; // ✅ required
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/providers/custom_auth-provider";
@@ -28,6 +29,7 @@ const TiptapEditor = dynamic(() => import("@/components/TiptapEditor"), {
 
 export default function NewArticlePage() {
   const auth = useAuth();
+  const router = useRouter();  
   const [articleId, setArticleId] = useState("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState(""); // HTML content
@@ -39,6 +41,18 @@ export default function NewArticlePage() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   const status = "published"; // Default status
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("jobraze-user");
+ 
+      // If not authenticated, redirect to login
+      if (!token || !user) {
+        router.replace("/auth/login");
+      }
+    }
+  }, []);
 
   // Fetch articles for dropdown
   useEffect(() => {
@@ -119,7 +133,7 @@ export default function NewArticlePage() {
  
       const token = localStorage.getItem("token");
       if (!token) {
-        console.error("No authentication token found");
+        console.warn("No authentication token found");
         setIsLoadingProfile(false);
         return;
       }
@@ -288,14 +302,6 @@ export default function NewArticlePage() {
   const userEmail =
     userProfile?.email || auth.user?.email || "admin@sainxt.com";
  
-  // Check authentication
-  if (!auth) {
-    return (
-      <p className="text-center mt-10 text-lg">
-        You must be signed in to access the admin articles page.
-      </p>
-    );
-  }
  
   const { user, loading: authLoading } = auth;
  
@@ -326,14 +332,7 @@ export default function NewArticlePage() {
       </div>
     );
   }
- 
-  if (!user) {
-    return (
-      <p className="text-center mt-10 text-lg">
-        You must be signed in to access the admin articles page.
-      </p>
-    );
-  }
+
   return (
     <DashboardLayout
       sidebar={<SidebarNav items={sidebarItems} />}

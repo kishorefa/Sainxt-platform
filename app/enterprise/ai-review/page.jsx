@@ -5,6 +5,7 @@ import Script from "next/script";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { useAuth } from "@/components/providers/custom_auth-provider";
+import { useRouter } from "next/navigation";
 import {
   TrendingUp,
   Briefcase,
@@ -43,6 +44,7 @@ const sidebarItems = [
 export default function AIReviewPage() {
   // Authentication and user state
   const auth = useAuth();
+  const router = useRouter();  
   const [userProfile, setUserProfile] = useState(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
 
@@ -59,6 +61,18 @@ export default function AIReviewPage() {
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState("");
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("jobraze-user");
+ 
+      // If not authenticated, redirect to login
+      if (!token || !user) {
+        router.replace("/auth/login");
+      }
+    }
+  }, []);
+
   // Fetch user profile on component mount
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -71,7 +85,7 @@ export default function AIReviewPage() {
 
         const token = localStorage.getItem("token");
         if (!token) {
-          console.error("No authentication token found");
+          console.warn("No authentication token found");
           setIsUserLoading(false);
           return;
         }
@@ -119,6 +133,7 @@ export default function AIReviewPage() {
 
     fetchUserProfile();
   }, []);
+
 
   useEffect(() => {
     setIsClient(true);
@@ -390,14 +405,6 @@ export default function AIReviewPage() {
     }
   };
 
-  // Authentication check
-  if (!auth) {
-    return (
-      <p className="text-center mt-10 text-lg">
-        You must be signed in to access the AI Review page.
-      </p>
-    );
-  }
 
   const { user, loading } = auth;
 
@@ -436,13 +443,6 @@ export default function AIReviewPage() {
     return <p className="text-center mt-10 text-lg">Loading...</p>;
   }
 
-  if (!user) {
-    return (
-      <p className="text-center mt-10 text-lg">
-        You must be signed in to access the AI Review page.
-      </p>
-    );
-  }
 
   return (
     <DashboardLayout

@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useParams } from "next/navigation";
+import { toast } from 'react-toastify';
 import {
   Card,
   CardContent,
@@ -30,10 +31,10 @@ import {
   Pencil,
   ArrowUpDown,
   Eye,
+  Loader2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/custom_auth-provider";
-import { useToast } from "@/components/ui/use-toast";
 // Alert dialog components removed
 import {
   TrendingUp,
@@ -45,9 +46,42 @@ import {
   Shield,
 } from "lucide-react";
 
+// Custom Confirmation Modal Component
+const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div className="p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            {title || "Confirm Action"}
+          </h3>
+          <p className="text-gray-600 mb-6">
+            {message || "Are you sure you want to proceed?"}
+          </p>
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function AdminArticlesPage() {
   const router = useRouter();
-  const { toast } = useToast();
   const params = useParams(); // ✅ this is synchronous
   const auth = useAuth();
   const id = params.id; // ✅ access it directly
@@ -60,6 +94,10 @@ export default function AdminArticlesPage() {
   });
   const [userProfile, setUserProfile] = useState(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  
+  // Modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [articleToDelete, setArticleToDelete] = useState(null);
 
   const sidebarItems = [
     { title: "Dashboard", href: "/admin/dashboard", icon: TrendingUp },
@@ -88,6 +126,18 @@ export default function AdminArticlesPage() {
   ];
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("jobraze-user");
+ 
+      // If not authenticated, redirect to login
+      if (!token || !user) {
+        router.replace("/auth/login");
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     fetchArticles();
     fetchUserProfile();
   }, []);
@@ -102,7 +152,7 @@ export default function AdminArticlesPage() {
 
       const token = localStorage.getItem("token");
       if (!token) {
-        console.error("No authentication token found");
+        console.warn("No authentication token found");
         setIsLoadingProfile(false);
         return;
       }
@@ -167,7 +217,83 @@ export default function AdminArticlesPage() {
     }
   };
 
-  // Delete functionality has been removed as per requirements
+  // Updated handleDelete to show modal instead of window.confirm
+  const handleDelete = async (articleId) => {
+    setArticleToDelete(articleId);
+    setShowDeleteModal(true);
+  };
+
+  // New function to handle the actual deletion
+  const confirmDelete = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      // Delete article card
+      const cardRes = await fetch(
+        `http://192.168.0.207:5000/api/admin/article-card/${articleToDelete}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      if (!cardRes.ok) {
+        const error = await cardRes.json();
+        throw new Error(error.detail || "Failed to delete article card");
+      }
+
+      // Show success toast with the same styling as your new article page
+      toast.success("Article Deleted Successfully!", {
+        position: "top-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        style: {
+          margin: '20px auto',
+          maxWidth: '500px',
+          borderRadius: '8px',
+          background: '#f0fdf4',
+          color: '#166534',
+          border: '1px solid #bbf7d0',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+        }
+      });
+
+      // Refresh the articles list to reflect the deletion
+      await fetchArticles();
+      
+    } catch (error) {
+      console.error("Delete error:", error);
+      
+      // Show error toast with consistent styling
+      toast.error(error.message || "Failed to delete article", {
+        position: "top-center",
+        style: {
+          margin: '20px auto',
+          maxWidth: '500px',
+          borderRadius: '8px',
+          background: '#fef2f2',
+          color: '#b91c1c',
+          border: '1px solid #fecaca'
+        }
+      });
+    } finally {
+      // Close modal and reset state
+      setShowDeleteModal(false);
+      setArticleToDelete(null);
+    }
+  };
+
+  // Function to close modal without deleting
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setArticleToDelete(null);
+  };
 
   // Get display name with priority: userProfile > auth.user > localStorage
   const getDisplayName = () => {
@@ -204,13 +330,7 @@ export default function AdminArticlesPage() {
     userProfile?.email || auth.user?.email || "admin@sainxt.com";
 
   // Check authentication
-  if (!auth) {
-    return (
-      <p className="text-center mt-10 text-lg">
-        You must be signed in to access the admin articles page.
-      </p>
-    );
-  }
+  
 
   const { user, loading: authLoading } = auth;
 
@@ -242,13 +362,7 @@ export default function AdminArticlesPage() {
     );
   }
 
-  if (!user) {
-    return (
-      <p className="text-center mt-10 text-lg">
-        You must be signed in to access the admin articles page.
-      </p>
-    );
-  }
+  
 
   // const filteredArticles = articles.filter((article) =>
   const filteredArticles = (articles || []).filter((article) =>
@@ -391,40 +505,53 @@ export default function AdminArticlesPage() {
                         )
                       : "N/A"}
                   </TableCell>
-                  <TableCell className="flex justify-end gap-2">
-                    {/* View */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() =>
-                        router.push(`/admin/articles/view/${article._id}`)
-                      }
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                <TableCell className="flex justify-end gap-2">
+  {/* View */}
+  <Button
+    variant="ghost"
+    size="icon"
+    onClick={() =>
+      router.push(`/admin/articles/view/${article._id}`)
+    }
+  >
+    <Eye className="h-4 w-4" />
+  </Button>
 
-                    {/* Edit */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() =>
-                        // router.push(`/admin/articles/edit/${article._id}`)
-                        router.push(
-                          `/admin/articles/edit/${article.article_id}`
-                        )
-                      }
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+  {/* Edit */}
+  <Button
+    variant="ghost"
+    size="icon"
+    onClick={() =>
+      router.push(`/admin/articles/edit/${article.article_id}`)
+    }
+  >
+    <Pencil className="h-4 w-4" />
+  </Button>
 
-                    {/* Delete button has been removed as per requirements */}
-                  </TableCell>
+  {/* Delete - This is now a SEPARATE button, not nested */}
+  <Button
+    variant="ghost"
+    size="icon"
+    onClick={() => handleDelete(article.article_id)}
+  >
+    <Trash2 className="h-4 w-4 text-red-500" />
+  </Button>
+</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         )}
       </div>
+
+      {/* Custom Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        title="Delete Article"
+        message="Are you sure you want to delete this article and its card? This action cannot be undone."
+      />
     </DashboardLayout>
   );
 }

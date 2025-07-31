@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-// import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
-import { useToast } from "@/components/ui/use-toast";
+// import { useToast } from "@/components/ui/use-toast";
+import { toast } from "react-toastify";
 import {
   Sparkles,
   BrainCircuit,
@@ -67,7 +67,7 @@ export default function AITrainingSessionPage() {
   // const { data: session } = useSession();
   const auth = useAuth();
   const router = useRouter();
-  const { toast } = useToast();
+  // const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [userProfile, setUserProfile] = useState(null);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
@@ -82,6 +82,19 @@ export default function AITrainingSessionPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const videoContainerRef = useRef(null);
   const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("jobraze-user");
+
+      // If not authenticated, redirect to login
+      if (!token || !user) {
+        router.replace("/auth/login");
+      }
+    }
+  }, []);
+
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -93,23 +106,26 @@ export default function AITrainingSessionPage() {
 
         const token = localStorage.getItem("token");
         if (!token) {
-          console.error("No authentication token found");
+          console.warn("No authentication token found");
           setIsLoading(false);
           router.push("/auth/login");
           return;
         }
 
         console.log("Attempting to fetch user profile...");
-        
+
         try {
-          const response = await fetch("http://192.168.0.207:5000/api/user/profile", {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-          });
+          const response = await fetch(
+            "http://localhost:5000/api/user/profile",
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              credentials: "include",
+            }
+          );
 
           console.log("Profile response status:", response.status);
 
@@ -133,12 +149,19 @@ export default function AITrainingSessionPage() {
           }
         } catch (error) {
           console.error("Error in fetchUserProfile:", error);
-          if (error.message.includes('Failed to fetch')) {
-            console.error('Backend server might be down or unreachable at http://192.168.0.207:5000');
+          if (error.message.includes("Failed to fetch")) {
+            console.error(
+              "Backend server might be down or unreachable at http://localhost:5000"
+            );
             // Show user-friendly error message
-            alert('Unable to connect to the server. Please check your internet connection or try again later.');
-          } else if (error.message.includes('401') || error.message.includes('403')) {
-            console.error('Authentication error, redirecting to login');
+            alert(
+              "Unable to connect to the server. Please check your internet connection or try again later."
+            );
+          } else if (
+            error.message.includes("401") ||
+            error.message.includes("403")
+          ) {
+            console.error("Authentication error, redirecting to login");
             router.push("/auth/login");
           }
         } finally {
@@ -163,16 +186,16 @@ export default function AITrainingSessionPage() {
             },
           }
         );
- 
+
         const data = await res.json();
- 
+
         if (data.completedVideos) {
           setCompletedVideos(new Set(data.completedVideos));
         }
         if (data.watchedVideos) {
           setWatchedVideos(new Set(data.watchedVideos));
         }
- 
+
         if (data.certificateIssued) {
           setCurrentVideoIndex(videoLessons.length - 1);
           // Don't call setShowSuccess here to prevent popup
@@ -188,12 +211,11 @@ export default function AITrainingSessionPage() {
         console.error("Error fetching progress:", err);
       }
     };
- 
+
     // fetchUserProfile().then(fetchProgress);
     fetchUserProfile();
     fetchProgress();
   }, []);
-
 
   if (isLoading) {
     return (
@@ -250,7 +272,7 @@ export default function AITrainingSessionPage() {
   const handleVideoSelect = (index) => {
     const isUnlocked = index === 0 || completedVideos.has(index - 1);
     if (!isUnlocked) {
-      alert("Please complete the previous lesson first.");
+      toast.error("Please complete the previous lesson first");
       return;
     }
 
@@ -274,7 +296,7 @@ export default function AITrainingSessionPage() {
       const category = currentVideo?.category || "ai";
 
       const response = await fetch(
-        `http://192.168.0.207:5000/api/mcqs/start-assignment?category=${category}`
+        `http://localhost:5000/api/mcqs/start-assignment?category=${category}`
       );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -338,7 +360,7 @@ export default function AITrainingSessionPage() {
 
     try {
       const response = await fetch(
-        "http://192.168.0.207:5000/api/mcqs/submit-assignment",
+        "http://localhost:5000/api/mcqs/submit-assignment",
         {
           method: "POST",
           headers: {
@@ -550,61 +572,6 @@ export default function AITrainingSessionPage() {
                   </div>
                 );
               })}
-
-              {/* {videoLessons.map((video, index) => (
-                <div
-                  key={video.id}
-                  onClick={() => handleVideoSelect(index)}
-                  className={`p-3 rounded-lg mb-2 cursor-pointer transition-colors ${
-                    currentVideoIndex === index
-                      ? "bg-blue-50 border border-blue-200"
-                      : "hover:bg-gray-50"
-                  }`}
-                >
-                  <div className="flex items-center">
-                    <div className="relative w-16 h-10 bg-gray-200 rounded-md overflow-hidden flex-shrink-0">
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 opacity-70"></div>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        {completedVideos.has(index) ? (
-                          <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                            <svg
-                              className="w-3 h-3 text-white"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          </div>
-                        ) : (
-                          <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center">
-                            <span className="text-xs font-medium text-gray-500">
-                              {index + 1}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="ml-3 flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {video.title}
-                      </p>
-                      <div className="flex items-center mt-0.5">
-                        <span className="text-xs text-gray-500">
-                          {video.duration}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-              } */}
             </div>
           </div>
 
