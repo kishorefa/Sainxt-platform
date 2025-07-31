@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/components/providers/custom_auth-provider";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
+import { Trash2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -39,7 +40,7 @@ import {
   TrendingUp,
   FileText,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from 'react-toastify';
 
 const sidebarItems = [
   { title: "Dashboard", href: "/admin/dashboard", icon: TrendingUp },
@@ -68,22 +69,11 @@ export default function UsersPage() {
     individual: [],
     enterprise: [],
   });
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("token");
-      const user = localStorage.getItem("jobraze-user");
- 
-      // If not authenticated, redirect to login
-      if (!token || !user) {
-        router.replace("/auth/login");
-      }
-    }
-  }, []);
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/admin/users");
+        const response = await fetch("http://192.168.0.207:5000/api/admin/users");
         if (!response.ok) {
           throw new Error("Failed to fetch users");
         }
@@ -114,7 +104,7 @@ export default function UsersPage() {
       }
 
       try {
-        const response = await fetch("http://localhost:5000/api/user/profile", {
+        const response = await fetch("http://192.168.0.207:5000/api/user/profile", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -191,7 +181,13 @@ export default function UsersPage() {
     );
   }
 
-
+  if (!auth.user) {
+    return (
+      <p className="text-center mt-10 text-lg">
+        You must be signed in to access the Admin Dashboard.
+      </p>
+    );
+  }
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -233,6 +229,99 @@ export default function UsersPage() {
     );
   };
 
+// Updated handleDeleteUser function with proper Sonner toast styling
+// Updated handleDeleteUser function with proper Sonner toast styling
+// Updated handleDeleteUser function with enhanced toast styling
+const handleDeleteUser = async (userId) => {
+  // Show custom confirmation popup instead of window.confirm
+  const confirmed = await new Promise((resolve) => {
+    const popup = document.createElement('div');
+    popup.innerHTML = `
+      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Confirm Delete</h3>
+          <p class="text-gray-600 mb-6">Are you sure you want to delete this user? This action cannot be undone.</p>
+          <div class="flex justify-end space-x-3">
+            <button id="cancel-btn" class="px-4 py-2 text-gray-500 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">
+              Cancel
+            </button>
+            <button id="confirm-btn" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors">
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(popup);
+    
+    popup.querySelector('#cancel-btn').onclick = () => {
+      document.body.removeChild(popup);
+      resolve(false);
+    };
+    
+    popup.querySelector('#confirm-btn').onclick = () => {
+      document.body.removeChild(popup);
+      resolve(true);
+    };
+  });
+
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(`http://192.168.0.207:5000/api/admin/users/${userId}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to delete user");
+    }
+
+    // Enhanced success toast matching the image style
+    toast.success("User Deleted Successfully!", {
+      description: "The user has been permanently removed from the system.",
+      duration: 5000,
+      className: "bg-green-50 border-green-200",
+      style: {
+        backgroundColor: '#f0fdf4',
+        borderColor: '#bbf7d0',
+        color: '#166534',
+      },
+      action: {
+        label: "Undo",
+        onClick: () => {
+          // Optional: Add undo functionality here
+          toast.info("Undo functionality not implemented yet");
+        },
+      },
+    });
+
+    // Refresh user list
+    setUsers((prev) => ({
+      admin: prev.admin.filter((u) => u._id !== userId),
+      individual: prev.individual.filter((u) => u._id !== userId),
+      enterprise: prev.enterprise.filter((u) => u._id !== userId),
+    }));
+  } catch (err) {
+    console.error("Delete error:", err);
+    
+    // Enhanced error toast
+    toast.error("Failed to Delete User", {
+      description: "Something went wrong while deleting the user. Please try again.",
+      duration: 5000,
+      className: "bg-red-50 border-red-200",
+      style: {
+        backgroundColor: '#fef2f2',
+        borderColor: '#fecaca',
+        color: '#dc2626',
+      },
+      action: {
+        label: "Retry",
+        onClick: () => handleDeleteUser(userId),
+      },
+    });
+  }
+};
   const renderUserTable = (userList, emptyMessage = "No users found") => {
     if (isLoading) {
       return (
@@ -251,6 +340,12 @@ export default function UsersPage() {
     }
 
     return (
+      // <DashboardLayout
+      //   sidebar={<SidebarNav items={sidebarItems} />}
+      //   userRole="admin"
+      //   userName={userName}
+      //   userEmail={userEmail}
+      // >
       <Table>
         <TableHeader>
           <TableRow>
@@ -259,6 +354,8 @@ export default function UsersPage() {
             <TableHead>Type</TableHead>
             <TableHead>Phone</TableHead>
             <TableHead>Joined</TableHead>
+            <TableHead>Actions</TableHead>
+
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -293,10 +390,21 @@ export default function UsersPage() {
                   {formatDate(user.createdAt)}
                 </div>
               </TableCell>
+              <TableCell>
+  <Button
+    variant="ghost"
+    className="text-red-600 hover:text-red-800"
+    onClick={() => handleDeleteUser(user._id)}
+  >
+    <Trash2 className="h-4 w-4" />
+  </Button>
+</TableCell>
+
             </TableRow>
           ))}
         </TableBody>
       </Table>
+      // </DashboardLayout>
     );
   };
 
