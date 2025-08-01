@@ -241,9 +241,8 @@ export default function ReadinessReport() {
       userName={userData.name}
       userEmail={userData.email}
     >
-      <div className="w-full min-h-full">
-        {/* Report Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-8 px-6 sm:px-8 md:px-12 rounded-xl shadow-lg mb-8">
+      {/* Report Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-8 px-6 sm:px-8 md:px-12 rounded-xl shadow-lg mb-8">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div>
@@ -262,14 +261,14 @@ export default function ReadinessReport() {
                   Print
                 </Button>
               </div>
-            </div>z
+            </div>
           </div>
         </div>
 
         {/* Main Content */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 space-y-8">
-        {/* Summary Section */}
-        <section className="space-y-6">
+          {/* Summary Section */}
+          <section className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Executive Summary</h2>
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
@@ -642,8 +641,8 @@ export default function ReadinessReport() {
                 );
               })}
             </div>
-          </div>
-        </Card>
+          </section>
+        )}
 
         {/* Skill Development Pathway */}
         {reportData?.evaluation?.skill_pathway?.length > 0 && (
