@@ -36,7 +36,6 @@
 // }
 
 import * as React from "react";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/components/providers/custom_auth-provider";
@@ -44,7 +43,14 @@ import { SessionWrapper } from "@/components/providers/SessionWrapper"; // your 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const inter = Inter({ subsets: ["latin"] });
+// Use system font stack for better performance and offline support
+const systemFont = {
+  className: "font-sans",
+  style: {
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  },
+};
 
 export const metadata = {
   title: "Jobraze - AI-Powered Career & Staffing Platform",
@@ -55,7 +61,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={systemFont.className} style={systemFont.style}>
         <SessionWrapper>
           <AuthProvider>
             <ThemeProvider

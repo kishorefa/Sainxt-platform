@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import {
@@ -180,7 +180,7 @@ const companySizes = [
   "Enterprise (1000+)",
 ];
 
-export default function ProfileBuilder() {
+function ProfileContent() {
   const auth = useAuth();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
@@ -2781,5 +2781,17 @@ export default function ProfileBuilder() {
         </div>
       )}
     </DashboardLayout>
+  );
+}
+
+export default function ProfileBuilder() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+      </div>
+    }>
+      <ProfileContent />
+    </Suspense>
   );
 }

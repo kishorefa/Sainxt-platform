@@ -43,10 +43,16 @@ const LiveInterview = ({ username: propUsername }) => {
   const [interviewData, setInterviewData] = useState(null);
   const [isAssignedInterview, setIsAssignedInterview] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const interViewData = JSON.parse(sessionStorage.getItem("interviewData"))
-  useEffect(()=>{
-    setSelectedJdId(interViewData?.interview_id)
-  },[interViewData])
+  
+  useEffect(() => {
+    // Ensure we're in the browser before accessing sessionStorage
+    if (typeof window !== 'undefined') {
+      const interViewData = JSON.parse(sessionStorage.getItem("interviewData") || 'null');
+      if (interViewData?.interview_id) {
+        setSelectedJdId(interViewData.interview_id);
+      }
+    }
+  }, []);
 
   // Timer state
   const [timeRemaining, setTimeRemaining] = useState(60 * 60);
