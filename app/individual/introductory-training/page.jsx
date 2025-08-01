@@ -116,7 +116,7 @@ export default function AITrainingSessionPage() {
 
         try {
           const response = await fetch(
-            "http://localhost:5000/api/user/profile",
+            "http://192.168.0.207:5000/api/user/profile",
             {
               method: "GET",
               headers: {
@@ -151,7 +151,7 @@ export default function AITrainingSessionPage() {
           console.error("Error in fetchUserProfile:", error);
           if (error.message.includes("Failed to fetch")) {
             console.error(
-              "Backend server might be down or unreachable at http://localhost:5000"
+              "Backend server might be down or unreachable at http://192.168.0.207:5000"
             );
             // Show user-friendly error message
             alert(
@@ -179,7 +179,7 @@ export default function AITrainingSessionPage() {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
-          "http://localhost:5000/api/user/training-progress/get",
+          "http://192.168.0.207:5000/api/user/training-progress/get",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -245,7 +245,7 @@ export default function AITrainingSessionPage() {
   }) => {
     try {
       const token = localStorage.getItem("token");
-      await fetch("http://localhost:5000/api/user/training-progress/save", {
+      await fetch("http://192.168.0.207:5000/api/user/training-progress/save", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -296,7 +296,7 @@ export default function AITrainingSessionPage() {
       const category = currentVideo?.category || "ai";
 
       const response = await fetch(
-        `http://localhost:5000/api/mcqs/start-assignment?category=${category}`
+        `http://192.168.0.207:5000/api/mcqs/start-assignment?category=${category}`
       );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -360,7 +360,7 @@ export default function AITrainingSessionPage() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/mcqs/submit-assignment",
+        "http://192.168.0.207:5000/api/mcqs/submit-assignment",
         {
           method: "POST",
           headers: {

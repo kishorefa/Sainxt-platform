@@ -93,7 +93,7 @@ export default function NewArticleCardPage() {
         token.substring(0, 10) + "..."
       );
 
-      const response = await fetch("http://localhost:5000/api/user/profile", {
+      const response = await fetch("http://192.168.0.207:5000/api/user/profile", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -144,7 +144,7 @@ export default function NewArticleCardPage() {
 
     try {
       const res = await fetch(
-        "http://localhost:5000/api/article/article_card",
+        "http://192.168.0.207:5000/api/article/article_card",
         {
           method: "POST",
           body: formData,

@@ -90,7 +90,7 @@ const ThoughtLeadershipPage = () => {
           return;
         }
 
-        const response = await fetch("http://localhost:5000/api/user/profile", {
+        const response = await fetch("http://192.168.0.207:5000/api/user/profile", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -139,7 +139,7 @@ const ThoughtLeadershipPage = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:5000/get-all-articles/")
+      .get("http://192.168.0.207:5000/get-all-articles/")
       .then((res) => {
         const rawArticles = res.data.articles || [];
 
@@ -207,7 +207,7 @@ const ThoughtLeadershipPage = () => {
   // const categories = [...new Set(articles.map((article) => article.category))];
   useEffect(() => {
     axios
-      .get("http://localhost:5000/get-all-articles/") // adjust if using different port
+      .get("http://192.168.0.207:5000/get-all-articles/") // adjust if using different port
       .then((res) => {
         setArticles(res.data.articles);
       })

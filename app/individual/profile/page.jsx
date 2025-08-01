@@ -182,7 +182,7 @@ const companySizes = [
 
 export default function ProfileBuilder() {
   const auth = useAuth();
-  const router = useRouter();  
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [showMarketReadinessPrompt, setShowMarketReadinessPrompt] =
     useState(false);
@@ -198,11 +198,13 @@ export default function ProfileBuilder() {
   const userEmail = auth?.user?.email || "";
   const searchParams = useSearchParams();
   const [formErrors, setFormErrors] = useState({});
+  const [hasEvaluationResult, setHasEvaluationResult] = useState(false);
+  const [hasEvaluation, setHasEvaluation] = useState(false);
   const [formData, setFormData] = useState({
     // Personal Information
-    firstName: "John",
-    lastName: "Doe",
-    email: "john@example.com",
+    firstName: "",
+    lastName: "",
+    email: "",
     phone: "+1 (555) 123-4567",
     location: "San Francisco, CA",
     dateOfBirth: "1995-05-15",
@@ -266,7 +268,7 @@ export default function ProfileBuilder() {
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("token");
       const user = localStorage.getItem("jobraze-user");
- 
+
       // If not authenticated, redirect to login
       if (!token || !user) {
         router.replace("/auth/login");
@@ -353,6 +355,46 @@ export default function ProfileBuilder() {
       setShowRecommendationsView(false);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (auth?.user && !formData.email) {
+      setFormData((prevData) => ({
+        ...prevData,
+        firstName: auth.user.firstName || "",
+        lastName: auth.user.lastName || "",
+        email: auth.user.email || "",
+      }));
+    }
+  }, [auth?.user, formData.email]);
+
+  useEffect(() => {
+    const checkEvaluationResult = async () => {
+      try {
+        const res = await fetch(
+          `http://192.168.0.207:5000/api/profile?email=${encodeURIComponent(
+            userEmail
+          )}`
+        );
+        if (!res.ok) throw new Error("Failed to fetch profile");
+        const data = await res.json();
+
+        if (
+          data?.evaluation?.gap_analysis ||
+          data?.evaluation?.recommendations
+        ) {
+          setHasEvaluationResult(true);
+          setAiResults(data); // ✅ Set full result
+        } else {
+          setHasEvaluationResult(false);
+          setAiResults(null); // Optional reset
+        }
+      } catch (error) {
+        console.error("Error checking evaluation result:", error);
+      }
+    };
+
+    if (userEmail) checkEvaluationResult();
+  }, [userEmail]);
 
   const validateCurrentStep = () => {
     const errors = {};
@@ -2441,6 +2483,20 @@ export default function ProfileBuilder() {
               Manage your personal information and career details
             </p>
           </div>
+          {hasEvaluationResult && (
+            <div className="flex justify-center mt-6">
+              <Button
+                className="bg-[#FF5E3A] hover:bg-[#e8552e] text-white rounded-md"
+                onClick={() => {
+                  setShowResults(true);
+                  setShowMarketReadinessPrompt(false);
+                  setShowDetailedRecommendations(true);
+                }}
+              >
+                View Results
+              </Button>
+            </div>
+          )}
 
           {/* Step Navigation */}
           <div className="flex justify-center">

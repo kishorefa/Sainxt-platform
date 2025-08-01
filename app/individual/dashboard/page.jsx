@@ -2,7 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getToken, isTokenExpired, refreshToken, clearAuthTokens } from "@/lib/auth";
+import {
+  getToken,
+  isTokenExpired,
+  refreshToken,
+  clearAuthTokens,
+} from "@/lib/auth";
 import { customFetch } from "@/lib/auth-interceptor";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
@@ -143,18 +148,20 @@ export default function IndividualDashboard() {
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [trainingProgress, setTrainingProgress] = useState(null);
+  const [profileScore, setProfileScore] = useState(null); // null = not loaded, false = no profile
+  const [scoreLoading, setScoreLoading] = useState(true);
 
   // Handle unauthorized events (e.g., when token refresh fails)
   useEffect(() => {
     const handleUnauthorized = () => {
-      console.log('Unauthorized access detected, redirecting to login');
-      router.push('/auth/login');
+      console.log("Unauthorized access detected, redirecting to login");
+      router.push("/auth/login");
     };
 
-    window.addEventListener('unauthorized', handleUnauthorized);
-    
+    window.addEventListener("unauthorized", handleUnauthorized);
+
     return () => {
-      window.removeEventListener('unauthorized', handleUnauthorized);
+      window.removeEventListener("unauthorized", handleUnauthorized);
     };
   }, [router]);
 
@@ -162,62 +169,62 @@ export default function IndividualDashboard() {
     const fetchUserProfile = async () => {
       try {
         // Only run on client side
-        if (typeof window === 'undefined') {
+        if (typeof window === "undefined") {
           setIsLoading(false);
           return;
         }
 
         const token = getToken();
         if (!token) {
-          console.log('No authentication token found, redirecting to login');
-          router.push('/auth/login');
+          console.log("No authentication token found, redirecting to login");
+          router.push("/auth/login");
           return;
         }
 
         // Check if token is expired and try to refresh it
         if (isTokenExpired()) {
           try {
-            console.log('Token expired, attempting to refresh...');
+            console.log("Token expired, attempting to refresh...");
             const newTokens = await refreshToken();
             if (!newTokens?.access_token) {
-              throw new Error('Failed to refresh token');
+              throw new Error("Failed to refresh token");
             }
-            console.log('Token refreshed successfully');
+            console.log("Token refreshed successfully");
           } catch (error) {
-            console.error('Token refresh failed:', error);
+            console.error("Token refresh failed:", error);
             clearAuthTokens();
-            window.dispatchEvent(new Event('unauthorized'));
+            window.dispatchEvent(new Event("unauthorized"));
             return;
           }
         }
-        
-        console.log('Fetching user profile...');
-        const response = await customFetch('/api/user/profile', {
-          method: 'GET'
+
+        console.log("Fetching user profile...");
+        const response = await customFetch("/api/user/profile", {
+          method: "GET",
         });
-        
+
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('Error response:', errorText);
+          console.error("Error response:", errorText);
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
-        console.log('Fetched user profile:', data);
+        console.log("Fetched user profile:", data);
         setUserProfile(data);
-        
+
         // Update the auth context with the full user data
         if (auth.setUser) {
-          auth.setUser(prev => ({
+          auth.setUser((prev) => ({
             ...prev,
             ...data,
-            first_name: data.first_name || prev?.first_name
+            first_name: data.first_name || prev?.first_name,
           }));
         }
       } catch (error) {
-        console.error('Error fetching user profile:', error);
-        if (error.message.includes('401') || error.message.includes('403')) {
-          window.dispatchEvent(new Event('unauthorized'));
+        console.error("Error fetching user profile:", error);
+        if (error.message.includes("401") || error.message.includes("403")) {
+          window.dispatchEvent(new Event("unauthorized"));
         }
       } finally {
         setIsLoading(false);
@@ -234,7 +241,7 @@ export default function IndividualDashboard() {
             },
           }
         );
- 
+
         const data = await res.json();
         console.log("Training Progress:", data);
         setTrainingProgress(data);
@@ -242,21 +249,48 @@ export default function IndividualDashboard() {
         console.error("Failed to fetch training progress", err);
       }
     };
- 
+
     fetchTrainingProgress();
     fetchUserProfile();
   }, []);
 
-
   // Check for auth and token only on client side
   const [isClient, setIsClient] = useState(false);
-  
+
   useEffect(() => {
     setIsClient(true);
   }, []);
 
+  useEffect(() => {
+    async function fetchScore() {
+      const email = auth?.user?.email || userProfile?.email;
+      if (!email) return;
+
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/score?email=${encodeURIComponent(email)}`
+        );
+
+        const data = await res.json();
+
+        if (data.exists) {
+          setProfileScore(data.percentage);
+        } else {
+          setProfileScore(false); // No profile
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile score:", err);
+      } finally {
+        setScoreLoading(false);
+      }
+    }
+
+    fetchScore();
+  }, [auth?.user?.email, userProfile]);
+
   if (!isClient) {
     // Show loading state during server-side rendering
+
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-coral"></div>
@@ -264,7 +298,7 @@ export default function IndividualDashboard() {
     );
   }
 
-  if (!auth || !localStorage.getItem('token')) {
+  if (!auth || !localStorage.getItem("token")) {
     // Show loading state while redirecting
     return (
       <div className="flex flex-col items-center justify-center min-h-screen space-y-4">
@@ -279,52 +313,64 @@ export default function IndividualDashboard() {
   const { user, loading } = auth;
 
   // Debug: Log the user object to see what data we have
-  console.log('User object in dashboard:', JSON.stringify(user, null, 2));
-  
+  console.log("User object in dashboard:", JSON.stringify(user, null, 2));
+
   // Check localStorage directly as well
   let storedUser = null;
-  if (typeof window !== 'undefined') {
-    storedUser = localStorage.getItem('jobraze-user');
-    console.log('Stored user in localStorage (raw):', storedUser);
+  if (typeof window !== "undefined") {
+    storedUser = localStorage.getItem("jobraze-user");
+    console.log("Stored user in localStorage (raw):", storedUser);
     try {
       const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-      console.log('Parsed user from localStorage:', parsedUser);
-      console.log('Available keys in user object:', Object.keys(parsedUser || {}));
+      console.log("Parsed user from localStorage:", parsedUser);
+      console.log(
+        "Available keys in user object:",
+        Object.keys(parsedUser || {})
+      );
     } catch (e) {
-      console.error('Error parsing stored user:', e);
+      console.error("Error parsing stored user:", e);
     }
   }
 
   // Get display name with priority: userProfile > auth.user > localStorage
   const getDisplayName = () => {
     // First check the fetched user profile
-    if (userProfile?.first_name) return userProfile.first_name;
-    if (userProfile?.name) return userProfile.name.split(' ')[0];
-    
+    if (userProfile?.first_name || userProfile?.name) return userProfile.first_name;
+    // if (userProfile?.name) return userProfile.name.split(" ")[0];
+
     // Then check the auth context
     if (user?.first_name) return user.first_name;
-    if (user?.name) return user.name.split(' ')[0];
-    if (user?.email) return user.email.split('@')[0];
-    
+    if (user?.name) return user.name.split(" ")[0];
+    if (user?.email) return user.email.split("@")[0];
+
     // Finally check localStorage as fallback
     try {
-      const storedUser = typeof window !== 'undefined' && localStorage.getItem('jobraze-user');
+      const storedUser =
+        typeof window !== "undefined" && localStorage.getItem("jobraze-user");
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
-        return parsedUser.first_name || parsedUser.name?.split(' ')[0] || parsedUser.email?.split('@')[0];
+        return (
+          parsedUser.first_name ||
+          parsedUser.name?.split(" ")[0] 
+          // parsedUser.email?.split("@")[0]
+        );
       }
     } catch (e) {
-      console.error('Error parsing stored user:', e);
+      console.error("Error parsing stored user:", e);
     }
-    
-    return 'User';
+
+    return "User";
   };
-  
+
   const userName = getDisplayName();
   const userEmail = userProfile?.email || user?.email || "user@example.com";
-  
+
   if (isLoading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading user data...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        Loading user data...
+      </div>
+    );
   }
 
   if (loading) {
@@ -409,46 +455,86 @@ export default function IndividualDashboard() {
                   Profile Completion Score
                 </CardTitle>
                 <CardDescription className="text-text-gray">
-                  Complete your profile to unlock more opportunities and build
-                  momentum
+                  {scoreLoading
+                    ? "Loading profile status..."
+                    : profileScore === false
+                    ? "Please build your profile for analysis"
+                    : "Complete your profile to unlock more opportunities and build momentum"}
                 </CardDescription>
               </div>
-              <div className="text-right">
-                <div className="text-3xl font-bold text-neon-coral">78%</div>
-                <Badge className="bg-electric-orange/10 text-electric-orange border-electric-orange/20">
-                  Good Progress
-                </Badge>
-              </div>
+
+              {!scoreLoading && typeof profileScore === "number" && (
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-neon-coral">
+                    {`${profileScore}%`}
+                  </div>
+                  <Badge className="bg-electric-orange/10 text-electric-orange border-electric-orange/20">
+                    {profileScore >= 80
+                      ? "Excellent"
+                      : profileScore >= 60
+                      ? "Good Progress"
+                      : "Needs Improvement"}
+                  </Badge>
+                </div>
+              )}
             </div>
           </CardHeader>
+
           <CardContent>
             <div className="space-y-4">
-              <Progress value={78} className="h-3 bg-surface-tertiary" />
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="h-4 w-4 text-aqua-blue" />
-                  <span className="text-deep-navy">Basic Info</span>
+              {!scoreLoading && profileScore === false ? (
+                <div className="text-center space-y-4">
+                  <p className="text-gray-600 text-sm">
+                    Please complete your profile to begin analysis.
+                  </p>
+                  <Button
+                    className="w-full bg-neon-coral text-white hover:bg-electric-orange transition-all duration-200"
+                    onClick={() => router.push("/individual/profile")}
+                  >
+                    Go to Profile Builder
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="h-4 w-4 text-aqua-blue" />
-                  <span className="text-deep-navy">Skills</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="h-4 w-4 text-electric-orange" />
-                  <span className="text-deep-navy">Experience</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="h-4 w-4 text-electric-orange" />
-                  <span className="text-deep-navy">Certifications</span>
-                </div>
-              </div>
-              <Button className="w-full bg-neon-coral text-white hover:bg-electric-orange transition-all duration-200">
-                Complete Missing Sections
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              ) : (
+                !scoreLoading &&
+                typeof profileScore === "number" && (
+                  <>
+                    <Progress
+                      value={profileScore}
+                      className="h-3 bg-surface-tertiary"
+                    />
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="h-4 w-4 text-aqua-blue" />
+                        <span className="text-deep-navy">Basic Info</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="h-4 w-4 text-aqua-blue" />
+                        <span className="text-deep-navy">Skills</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Clock className="h-4 w-4 text-electric-orange" />
+                        <span className="text-deep-navy">Experience</span>
+                      </div>
+                      {/* <div className="flex items-center gap-2 text-sm">
+                        <Clock className="h-4 w-4 text-electric-orange" />
+                        <span className="text-deep-navy">Certifications</span>
+                      </div> */}
+                    </div>
+                    <Button
+                      className="w-full bg-neon-coral text-white hover:bg-electric-orange transition-all duration-200"
+                      onClick={() => router.push("/individual/profile")}
+                    >
+                      Complete Missing Sections
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </>
+                )
+              )}
             </div>
           </CardContent>
         </Card>
+
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
@@ -630,9 +716,9 @@ export default function IndividualDashboard() {
                         <Download className="h-4 w-4" />
                       </Button>
                     </div>
-                
-                  {/* 🧠 Dynamic Certificate: AI101 Introductory Training */}
-                  <div className="flex items-center justify-between p-3 border border-soft-gray rounded-lg">
+
+                    {/* 🧠 Dynamic Certificate: AI101 Introductory Training */}
+                    <div className="flex items-center justify-between p-3 border border-soft-gray rounded-lg">
                       <div className="flex items-center gap-3">
                         <div
                           className={`w-10 h-10 rounded-lg flex items-center justify-center ${
@@ -672,7 +758,7 @@ export default function IndividualDashboard() {
                         </Button>
                       )}
                     </div>
-                    </div>
+                  </div>
                   <Button
                     variant="outline"
                     className="w-full border-soft-gray text-deep-navy hover:bg-surface-secondary"

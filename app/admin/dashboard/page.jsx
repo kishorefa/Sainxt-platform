@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/custom_auth-provider";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -51,51 +57,7 @@ const sidebarItems = [
   { title: "System Settings", href: "/admin/settings", icon: Settings },
   { title: "Security", href: "/admin/security", icon: Shield },
   { title: "Articles", href: "/admin/articles", icon: FileText },
-  {
-    title: "Article Cards",
-    href: "/admin/new_article-card",
-    icon: FileText,
-    // active: true,
-  },
-];
-
-const platformMetrics = [
-  {
-    title: "Total Users",
-    value: "12,847",
-    change: "+8.2%",
-    changeType: "increase",
-    period: "from last month",
-    icon: Users,
-    color: "text-blue-600",
-  },
-  {
-    title: "Enterprise Clients",
-    value: "156",
-    change: "+12.5%",
-    changeType: "increase",
-    period: "from last month",
-    icon: Building2,
-    color: "text-green-600",
-  },
-  {
-    title: "Monthly Revenue",
-    value: "$89,420",
-    change: "+15.3%",
-    changeType: "increase",
-    period: "from last month",
-    icon: DollarSign,
-    color: "text-purple-600",
-  },
-  {
-    title: "Active Assessments",
-    value: "2,341",
-    change: "+5.7%",
-    changeType: "increase",
-    period: "from last week",
-    icon: BarChart3,
-    color: "text-orange-600",
-  },
+  { title: "Article Cards", href: "/admin/new_article-card", icon: FileText },
 ];
 
 const systemHealth = [
@@ -103,49 +65,6 @@ const systemHealth = [
   { name: "Memory Usage", value: 62, status: "warning", threshold: 80 },
   { name: "Database Load", value: 38, status: "good", threshold: 70 },
   { name: "Storage Usage", value: 73, status: "warning", threshold: 85 },
-];
-
-const recentActivity = [
-  {
-    id: 1,
-    type: "user_registration",
-    message: "New enterprise account registered",
-    details: "TechCorp Inc. signed up for Premium plan",
-    timestamp: "2 hours ago",
-    icon: UserPlus,
-    color: "bg-green-100 text-green-600",
-    severity: "info",
-  },
-  {
-    id: 2,
-    type: "system_alert",
-    message: "High server load detected",
-    details: "Assessment servers at 85% capacity",
-    timestamp: "4 hours ago",
-    icon: AlertTriangle,
-    color: "bg-orange-100 text-orange-600",
-    severity: "warning",
-  },
-  {
-    id: 3,
-    type: "payment",
-    message: "Payment processed successfully",
-    details: "DataTech Solutions - $2,499/month",
-    timestamp: "6 hours ago",
-    icon: CheckCircle,
-    color: "bg-blue-100 text-blue-600",
-    severity: "info",
-  },
-  {
-    id: 4,
-    type: "security",
-    message: "Security scan completed",
-    details: "No vulnerabilities detected",
-    timestamp: "8 hours ago",
-    icon: Shield,
-    color: "bg-green-100 text-green-600",
-    severity: "info",
-  },
 ];
 
 const topPerformingFeatures = [
@@ -167,13 +86,82 @@ export default function AdminDashboard() {
   const auth = useAuth();
   const router = useRouter();
   const [userProfile, setUserProfile] = useState(null);
+  const recentActivity = []; // Add this at the top of AdminDashboard
   const [isLoading, setIsLoading] = useState(true);
+  const [metrics, setMetrics] = useState({
+    total_users: 0,
+    enterprise_clients: 0,
+    active_assessments: 0,
+  });
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    async function fetchDashboardMetrics() {
+      try {
+        const res = await fetch("http://localhost:5000/api/dashboard/metrics");
+        if (!res.ok) {
+          throw new Error("Failed to fetch metrics");
+        }
+        const data = await res.json();
+        setMetrics(data);
+      } catch (error) {
+        console.error("Dashboard metrics error:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchDashboardMetrics();
+  }, []);
+
+  const platformMetrics = [
+    {
+      title: "Total Users",
+      value: metrics.total_users.toLocaleString(),
+      change: "+8.2%",
+      changeType: "increase",
+      period: "from last month",
+      icon: Users,
+      color: "text-blue-600",
+    },
+    {
+      title: "Enterprise Clients",
+      value: metrics.enterprise_clients.toLocaleString(),
+      change: "+12.5%",
+      changeType: "increase",
+      period: "from last month",
+      icon: Building2,
+      color: "text-green-600",
+    },
+    {
+      title: "Monthly Revenue",
+      value: "$89,420", // Static for now
+      change: "+15.3%",
+      changeType: "increase",
+      period: "from last month",
+      icon: DollarSign,
+      color: "text-purple-600",
+    },
+    {
+      title: "Active Assessments",
+      value: metrics.active_assessments.toLocaleString(),
+      change: "+5.7%",
+      changeType: "increase",
+      period: "from last week",
+      icon: BarChart3,
+      color: "text-orange-600",
+    },
+  ];
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("token");
       const user = localStorage.getItem("jobraze-user");
- 
+
       // If not authenticated, redirect to login
       if (!token || !user) {
         router.replace("/auth/login");
@@ -192,12 +180,16 @@ export default function AdminDashboard() {
 
         const token = localStorage.getItem("token");
         if (!token) {
-          console.warn("No authentication token found");
+          // console.error("No authentication token found");
+          console.warn(
+            "No authentication token found (user likely unauthenticated)"
+          );
+
           setIsLoading(false);
           return;
         }
 
-        const response = await fetch("http://192.168.0.207:5000/api/user/profile", {
+        const response = await fetch("http://localhost:5000/api/user/profile", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -233,22 +225,16 @@ export default function AdminDashboard() {
     fetchUserProfile();
   }, []);
 
-  const [isClient, setIsClient] = useState(false);
- 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
- 
   if (!isClient) {
     // Show loading state during server-side rendering
- 
+
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-coral"></div>
       </div>
     );
   }
- 
+
   if (!auth || !localStorage.getItem("token")) {
     // Show loading state while redirecting
     return (
@@ -260,12 +246,12 @@ export default function AdminDashboard() {
       </div>
     );
   }
- 
+
   const { user, loading } = auth;
- 
+
   // Debug: Log the user object to see what data we have
   console.log("User object in dashboard:", JSON.stringify(user, null, 2));
- 
+
   // Check localStorage directly as well
   let storedUser = null;
   if (typeof window !== "undefined") {
@@ -282,7 +268,6 @@ export default function AdminDashboard() {
       console.error("Error parsing stored user:", e);
     }
   }
- 
 
   // Get display name with priority: userProfile > auth.user > localStorage
   const getDisplayName = () => {
@@ -297,7 +282,8 @@ export default function AdminDashboard() {
 
     // Finally check localStorage as fallback
     try {
-      const storedUser = typeof window !== "undefined" && localStorage.getItem("jobraze-user");
+      const storedUser =
+        typeof window !== "undefined" && localStorage.getItem("jobraze-user");
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
         return (
@@ -314,7 +300,8 @@ export default function AdminDashboard() {
   };
 
   const userName = getDisplayName();
-  const userEmail = userProfile?.email || auth.user?.email || "admin@sainxt.com";
+  const userEmail =
+    userProfile?.email || auth.user?.email || "admin@sainxt.com";
 
   if (isLoading) {
     return (

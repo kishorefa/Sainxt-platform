@@ -143,7 +143,7 @@ export default function NewArticlePage() {
         token.substring(0, 10) + "..."
       );
  
-      const response = await fetch("http://localhost:5000/api/user/profile", {
+      const response = await fetch("http://192.168.0.207:5000/api/user/profile", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
